@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess Move Calculator</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <h1>Chess Move Calculator</h1>
+        <p class="subtitle">Select a piece to see legal moves</p>
+      </header>
+
+      <main class="app-main">
+        <section class="chess-section">
+          <div class="board-wrapper">
+            <div id="orientation-control" class="orientation-control">
+              <span class="orientation-label">View:</span>
+              <button type="button" id="orientation-white" class="orientation-btn active">White to move</button>
+              <button type="button" id="orientation-black" class="orientation-btn">Black to move</button>
+              <button type="button" id="reset-board" class="orientation-btn reset-btn">Reset board</button>
+            </div>
+            <div id="chess-board" class="chess-board"></div>
+          </div>
+          <aside class="sidebar">
+            <div id="move-list" class="move-list">
+              <h3>Legal moves</h3>
+              <p class="hint">Click a piece to see its legal moves.</p>
+              <ul id="moves-output"></ul>
+            </div>
+            <div id="game-info" class="game-info">
+              <p><strong>Turn:</strong> <span id="turn-display">White</span></p>
+              <p><strong>FEN:</strong> <code id="fen-display"></code></p>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
