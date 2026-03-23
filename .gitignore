@@ -1,6 +1,9 @@
-node_modules
-dist
 .DS_Store
 *.log
 .env
 .env.local
+.vite/
+
+# C++ build
+cpp/build/
+cpp/chess-calc
