@@ -2,7 +2,8 @@
  * Chess Move Calculator - C++ Native Window
  * SDL2 GUI: puzzle setup, legal moves, Stockfish best move, palettes, sidebar.
  */
-
+#include "chess_trie.h"
+#include "pgn_parser.h"
 #include "chess.hpp"
 #include "stockfish.hpp"
 #include <SDL2/SDL.h>
@@ -48,10 +49,13 @@ const Uint32 COLOR_ACCENT = 0x0f3460ff;
 const char* PIECE_NAMES[] = {"king", "queen", "rook", "bishop", "knight", "pawn"};
 const char* PIECE_NAMES_CAP[] = {"King", "Queen", "Rook", "Bishop", "Knight", "Pawn"};
 
+ChessTrie g_trie;
+
 struct App {
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
   SDL_Texture* pieceTex[2][6] = {{nullptr}};
+  vector<string> movesPlayed;
 #if HAVE_TTF
   TTF_Font* font = nullptr;
   TTF_Font* fontSmall = nullptr;
@@ -134,47 +138,111 @@ static bool hasValidKingCount(const Board& board) {
   auto bk = board.pieces(PieceType::KING, Color::BLACK);
   return wk.count() == 1 && bk.count() == 1;
 }
-
 static void updateBestMove(App& app, bool force = false) {
-  std::string fen = app.board.getFen();
-  if (!force && fen == app.lastAnalyzedFen) return;
-  app.lastAnalyzedFen = fen;
-  app.bestMoveUci = "";
-  app.bestMoveSan = "";
-  app.bestMoveEnglish = "";
-  app.bestMoveFrom = -1;
-  app.bestMoveTo = -1;
+    std::string fen = app.board.getFen();
+    if (!force && fen == app.lastAnalyzedFen) return;
+    app.lastAnalyzedFen = fen;
+    app.bestMoveUci = "";
+    app.bestMoveSan = "";
+    app.bestMoveEnglish = "";
+    app.bestMoveFrom = -1;
+    app.bestMoveTo = -1;
 
-  if (!hasValidKingCount(app.board)) {
-    app.bestMoveEnglish = "Invalid position (need 1 king each)";
-    return;
-  }
+    if (!hasValidKingCount(app.board)) {
+        app.bestMoveEnglish = "Invalid position (need 1 king each)";
+        return;
+    }
+    Movelist moves;
+    movegen::legalmoves(moves, app.board);
+    if (moves.size() == 0) {
+        app.bestMoveEnglish = "Game over";
+        return;
+    }
 
-  Movelist moves;
-  movegen::legalmoves(moves, app.board);
-  if (moves.size() == 0) {
-    app.bestMoveEnglish = "Game over";
-    return;
-  }
+    // -------------------------------------------------------
+    // Priority 1: trie (most popular move from database)
+    // Only works if moves were played in sequence this session
+    // -------------------------------------------------------
+    if (!app.movesPlayed.empty()) {
+        string trieBest = g_trie.getBestMove(app.movesPlayed);
+        if (!trieBest.empty()) {
+            app.bestMoveSan = trieBest;
+            app.bestMoveEnglish = "Most popular in your rating range";
+            // Convert SAN back to from/to squares for the arrow
+            for (size_t i = 0; i < moves.size(); i++) {
+                if (uci::moveToSan(app.board, moves[i]) == trieBest) {
+                    app.bestMoveFrom = moves[i].from().index();
+                    app.bestMoveTo   = moves[i].to().index();
+                    app.showBestMoveArrow = true;
+                    break;
+                }
+            }
+            return;
+        }
+    }
 
-  std::string uci = getBestMoveFromStockfish(fen, 400);
-  Move m = Move::NO_MOVE;
-  if (!uci.empty()) {
-    m = uci::uciToMove(app.board, uci);
-  }
-  if (m == Move::NO_MOVE) {
-    m = moves[0];
-    app.bestMoveSan = static_cast<std::string>(m.from()) + "-" + static_cast<std::string>(m.to());
+    // -------------------------------------------------------
+    // Priority 2: Matt's FEN hashmap (manually set positions)
+    // Swap in Matt's actual lookup function here
+    // -------------------------------------------------------
+    // string hashmapBest = matt_hashmap.getBestMove(fen);
+    // if (!hashmapBest.empty()) { ... same pattern ... return; }
+
+    // -------------------------------------------------------
+    // Priority 3: Stockfish (existing logic, unchanged)
+    // -------------------------------------------------------
+    string uci = getBestMoveFromStockfish(fen, 400);
+    Move m = Move::NO_MOVE;
+    if (!uci.empty()) m = uci::uciToMove(app.board, uci);
+    if (m == Move::NO_MOVE) m = moves[0];
+
+    app.bestMoveUci     = uci;
+    app.bestMoveSan     = uci::moveToSan(app.board, m);
     app.bestMoveEnglish = moveToPlainEnglish(app.board, m);
-  } else {
-    app.bestMoveUci = uci;
-    app.bestMoveSan = uci::moveToSan(app.board, m);
-    app.bestMoveEnglish = moveToPlainEnglish(app.board, m);
-  }
-  app.bestMoveFrom = m.from().index();
-  app.bestMoveTo = m.to().index();
-  app.showBestMoveArrow = true;
+    app.bestMoveFrom    = m.from().index();
+    app.bestMoveTo      = m.to().index();
+    app.showBestMoveArrow = true;
 }
+// static void updateBestMove(App& app, bool force = false) {
+//   std::string fen = app.board.getFen();
+//   if (!force && fen == app.lastAnalyzedFen) return;
+//   app.lastAnalyzedFen = fen;
+//   app.bestMoveUci = "";
+//   app.bestMoveSan = "";
+//   app.bestMoveEnglish = "";
+//   app.bestMoveFrom = -1;
+//   app.bestMoveTo = -1;
+
+//   if (!hasValidKingCount(app.board)) {
+//     app.bestMoveEnglish = "Invalid position (need 1 king each)";
+//     return;
+//   }
+
+//   Movelist moves;
+//   movegen::legalmoves(moves, app.board);
+//   if (moves.size() == 0) {
+//     app.bestMoveEnglish = "Game over";
+//     return;
+//   }
+
+//   std::string uci = getBestMoveFromStockfish(fen, 400);
+//   Move m = Move::NO_MOVE;
+//   if (!uci.empty()) {
+//     m = uci::uciToMove(app.board, uci);
+//   }
+//   if (m == Move::NO_MOVE) {
+//     m = moves[0];
+//     app.bestMoveSan = static_cast<std::string>(m.from()) + "-" + static_cast<std::string>(m.to());
+//     app.bestMoveEnglish = moveToPlainEnglish(app.board, m);
+//   } else {
+//     app.bestMoveUci = uci;
+//     app.bestMoveSan = uci::moveToSan(app.board, m);
+//     app.bestMoveEnglish = moveToPlainEnglish(app.board, m);
+//   }
+//   app.bestMoveFrom = m.from().index();
+//   app.bestMoveTo = m.to().index();
+//   app.showBestMoveArrow = true;
+// }
 
 static std::string findAssetPath() {
   char* base = SDL_GetBasePath();
@@ -625,6 +693,9 @@ static bool tryLegalMove(App& app, int fromSq, int toSq) {
   for (size_t i = 0; i < moves.size(); i++) {
     if (moves[i].from() == Square(fromSq) && moves[i].to() == Square(toSq)) {
       Board b = getBoardForPieceMoves(app.board, fromSq);
+
+      app.movesPlayed.push_back(uci::moveToSan(b, moves[i]));
+
       b.makeMove(moves[i]);
       app.board = b;
       boardToArray(app.board, app.pieces);
@@ -640,6 +711,14 @@ static bool tryLegalMove(App& app, int fromSq, int toSq) {
 int main(int argc, char* argv[]) {
   (void)argc;
   (void)argv;
+  
+  cout << "Loading opening database...\n";
+    PGNParser parser(1200, 1600, 20);
+    parser.parse("lichess_games.pgn", [&](const GameData& game) {
+        g_trie.insertGame(game.moves);
+    });
+    g_trie.prune(5);
+    cout << "Database ready.\n";
 
   SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -727,6 +806,7 @@ int main(int argc, char* argv[]) {
           app.boardFlipped = false;
           app.selectedSquare = -1;
           app.legalMoveSquares.clear();
+          app.movesPlayed.clear(); 
           clearBestMoveDisplay(app);
         } else if (pal >= 0) {
           app.dragFromPalette = pal;
