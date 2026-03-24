@@ -3,7 +3,7 @@
 # Sidebar text requires SDL2_ttf!
 
 CXX = clang++
-CXXFLAGS = -std=c++17 -O2 -DNDEBUG -I include
+CXXFLAGS = -std=c++17 -O2 -DNDEBUG -I include -I src
 
 # Try pkg-config first, fallback to Homebrew paths
 PKG_CONFIG := $(shell which pkg-config 2>/dev/null)
@@ -35,7 +35,8 @@ ifeq ($(HAVE_TTF),)
   $(warning SDL2_ttf not found - sidebar will be empty. Install with: brew install sdl2_ttf)
 endif
 
-chess-calc: src/main.cpp src/stockfish.cpp
+chess-calc: src/main.cpp src/stockfish.cpp src/opening_db.cpp src/chess_gui_helpers.cpp \
+		src/best_move.cpp src/gui_assets.cpp src/gui_render.cpp src/gui_input.cpp src/app_actions.cpp
 	$(CXX) $(CXXFLAGS) $(SDL_CFLAGS) -o $@ $^ $(SDL_LIBS)
 
 run: chess-calc

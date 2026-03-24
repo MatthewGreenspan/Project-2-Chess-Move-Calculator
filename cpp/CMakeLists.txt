@@ -35,10 +35,18 @@ endif()
 add_executable(chess-calc
   src/main.cpp
   src/stockfish.cpp
+  src/opening_db.cpp
+  src/chess_gui_helpers.cpp
+  src/best_move.cpp
+  src/gui_assets.cpp
+  src/gui_render.cpp
+  src/gui_input.cpp
+  src/app_actions.cpp
 )
 
 target_include_directories(chess-calc PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(chess-calc PRIVATE
