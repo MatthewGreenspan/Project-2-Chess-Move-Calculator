@@ -1,0 +1,10 @@
+Create HashMap
+Add elo of chess interface
+Download Lichess Database based on elo (so its not a million games)
+Pass most common move into stockfish, if above threshold suggest it, if not give stockfish best move
+Add source for chess move suggestion(if uses database or stockfish)
+Create ReadMe file
+Reflection(time complexities?)
+add some comments 
+fix bugs with interface
+Test Test Test
