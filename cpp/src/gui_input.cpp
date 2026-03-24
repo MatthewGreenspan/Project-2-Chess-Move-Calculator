@@ -34,12 +34,6 @@ int getPalettePieceAt(const App& app, int pixelX, int pixelY) {
   return -1;
 }
 
-bool inPalette(int y) {
-  int py1 = y - PADDING;
-  int py2 = y - PADDING - PALETTE_HEIGHT - PADDING - BOARD_SIZE - PADDING;
-  return (py1 >= 0 && py1 < PALETTE_HEIGHT) || (py2 >= 0 && py2 < PALETTE_HEIGHT);
-}
-
 int getSidebarButtonAt(int x, int y) {
   int sideX = BOARD_AREA_W + PADDING;
   if (x < sideX || x >= sideX + SIDEBAR_WIDTH - PADDING * 2) return -1;

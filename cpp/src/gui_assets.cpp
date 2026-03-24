@@ -51,9 +51,16 @@ bool loadAssets(App& app) {
     }
 #if HAVE_TTF
   const char* fontPaths[] = {
+#if defined(_WIN32)
+      "C:\\Windows\\Fonts\\segoeui.ttf",
+      "C:\\Windows\\Fonts\\arial.ttf",
+#elif defined(__APPLE__)
       "/System/Library/Fonts/Helvetica.ttc",
       "/System/Library/Fonts/SFNS.ttf",
+#else
       "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+#endif
       nullptr};
   for (int i = 0; fontPaths[i]; i++) {
     app.font = TTF_OpenFont(fontPaths[i], 18);

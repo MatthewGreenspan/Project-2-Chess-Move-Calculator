@@ -35,9 +35,13 @@ ifeq ($(HAVE_TTF),)
   $(warning SDL2_ttf not found - sidebar will be empty. Install with: brew install sdl2_ttf)
 endif
 
-chess-calc: src/main.cpp src/stockfish.cpp src/opening_db.cpp src/chess_gui_helpers.cpp \
-		src/best_move.cpp src/gui_assets.cpp src/gui_render.cpp src/gui_input.cpp src/app_actions.cpp
-	$(CXX) $(CXXFLAGS) $(SDL_CFLAGS) -o $@ $^ $(SDL_LIBS)
+# Rebuild when headers change (only .cpp files are passed to the linker)
+SRCS := src/main.cpp src/sdl_helpers.cpp src/stockfish.cpp src/opening_db.cpp src/chess_gui_helpers.cpp \
+	src/best_move.cpp src/gui_assets.cpp src/gui_render.cpp src/gui_input.cpp src/app_actions.cpp
+HDRS := $(wildcard include/*.hpp src/*.h)
+
+chess-calc: $(SRCS) $(HDRS)
+	$(CXX) $(CXXFLAGS) $(SDL_CFLAGS) -o $@ $(SRCS) $(SDL_LIBS)
 
 run: chess-calc
 	./chess-calc
@@ -45,4 +49,10 @@ run: chess-calc
 clean:
 	rm -f chess-calc
 
-.PHONY: run clean
+# Regenerate compile_commands.json for clangd / IDE (run after changing deps or paths)
+compile_commands.json:
+	python3 generate_compile_commands.py
+
+compile_commands: compile_commands.json
+
+.PHONY: run clean compile_commands

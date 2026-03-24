@@ -1,6 +1,3 @@
-/**
- * Chess Move Calculator (entry) — SDL2 init, window loop, and shutdown.
- */
 #include "app.hpp"
 #include "app_actions.hpp"
 #include "best_move.hpp"
@@ -10,6 +7,7 @@
 #include "gui_input.hpp"
 #include "gui_render.hpp"
 #include "opening_db.hpp"
+#include "sdl_helpers.hpp"
 #include <SDL2/SDL.h>
 #include <string>
 
@@ -26,7 +24,7 @@ int main(int argc, char* argv[]) {
 
   loadOpeningDatabase();
 
-  SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
+  sdlApplyHintsBeforeInit();
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     SDL_Log("SDL_Init failed: %s", SDL_GetError());
     return 1;
@@ -50,6 +48,9 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  SDL_SetWindowMinimumSize(app.window, WINDOW_W, WINDOW_H);
+  SDL_SetWindowMaximumSize(app.window, WINDOW_W, WINDOW_H);
+
   app.renderer = SDL_CreateRenderer(app.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if (!app.renderer) {
     SDL_DestroyWindow(app.window);
@@ -61,6 +62,7 @@ int main(int argc, char* argv[]) {
   }
 
   SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
+  sdlSetupRendererLogical(app.renderer, WINDOW_W, WINDOW_H);
 
   if (!loadAssets(app)) {
     SDL_Log("Failed to create piece textures.");
@@ -124,9 +126,10 @@ int main(int argc, char* argv[]) {
               app.selectedSquare = sq;
               updateLegalMoves(app);
             } else if (app.selectedSquare >= 0) {
-              if (tryLegalMove(app, app.selectedSquare, sq)) { /* done */ }
-              else
-                app.selectedSquare = -1, app.legalMoveSquares.clear();
+              if (!tryLegalMove(app, app.selectedSquare, sq)) {
+                app.selectedSquare = -1;
+                app.legalMoveSquares.clear();
+              }
             }
           }
         }
@@ -141,9 +144,7 @@ int main(int argc, char* argv[]) {
         if (wasDrag) {
           if (inBoard(app, e.button.x, e.button.y) && sq >= 0) {
             if (app.dragFrom >= 0) {
-              if (tryLegalMove(app, app.dragFrom, sq)) { }
-              else
-                doDrop(app, sq);
+              if (!tryLegalMove(app, app.dragFrom, sq)) doDrop(app, sq);
             } else if (app.dragFromPalette >= 0) {
               doDrop(app, sq);
             }

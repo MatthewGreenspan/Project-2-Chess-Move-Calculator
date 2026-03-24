@@ -1,0 +1,20 @@
+{
+  "version": 4,
+  "configurations": [
+    {
+      "name": "cpp (Makefile)",
+      "includePath": [
+        "${workspaceFolder}/cpp/include",
+        "${workspaceFolder}/cpp/src",
+        "/opt/homebrew/include",
+        "/usr/local/include",
+        "/usr/include/SDL2"
+      ],
+      "defines": ["NDEBUG"],
+      "compilerPath": "/usr/bin/clang++",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "macos-clang-arm64"
+    }
+  ]
+}

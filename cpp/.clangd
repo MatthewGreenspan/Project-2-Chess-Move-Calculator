@@ -1,0 +1,11 @@
+# Clangd (Cursor/VS Code): match Makefile include paths so headers resolve.
+# SDL2: Homebrew (Apple Silicon / Intel) and common Linux locations.
+CompileFlags:
+  Add:
+    - -std=c++17
+    - -DNDEBUG
+    - -Iinclude
+    - -Isrc
+    - -I/opt/homebrew/include
+    - -I/usr/local/include
+    - -I/usr/include/SDL2

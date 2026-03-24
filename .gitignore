@@ -19,6 +19,9 @@ $RECYCLE.BIN/
 # Web (legacy)
 .vite/
 
+# Clangd / IDE
+cpp/.cache/
+
 # C++ — build outputs (macOS / Linux)
 cpp/build/
 cpp/chess-calc

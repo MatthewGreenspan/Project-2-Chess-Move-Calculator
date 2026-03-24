@@ -62,6 +62,8 @@ build\Release\chess-calc.exe
 
 `cmake` copies **`assets`** next to **`chess-calc.exe`** automatically.
 
+The build also copies **all DLLs from the vcpkg `bin` folder** next to `chess-calc.exe` (SDL2, SDL2_ttf, FreeType, zlib, etc.). That avoids Windows errors like **“The specified module could not be found”** when loading `SDL2_ttf.dll`. Always run the `.exe` from that same folder (e.g. `build\Release\`), or keep those DLLs beside the exe if you move it.
+
 ### 4. Windows extras (optional but useful)
 
 | What | Why |
@@ -113,3 +115,13 @@ make
 - Sidebar needs **SDL2_ttf** or text is hidden.  
 - **Stockfish** on PATH when possible; otherwise **Lichess** via **curl** (see Windows table above).  
 - Assets are copied next to the executable by CMake’s `POST_BUILD` step.
+
+### Display / aspect ratio (HiDPI, Retina, fractional scaling)
+
+The app uses a **fixed logical size** and **integer scaling** so the board should not look stretched. If something still looks wrong after a **full rebuild** (`make clean && make` or a clean CMake build):
+
+1. Confirm your partner is running a **newly built** binary (not an old copy).
+2. **macOS / Retina:** run with HiDPI disabled for a 1:1 pixel path:  
+   `CHESS_CALC_DISABLE_HIGHDPI=1 ./chess-calc`
+3. **Windows:** same variable in an environment variable or:  
+   `set CHESS_CALC_DISABLE_HIGHDPI=1` then run `chess-calc.exe` from the folder that contains the DLLs.

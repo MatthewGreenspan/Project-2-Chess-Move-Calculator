@@ -34,6 +34,7 @@ endif()
 
 add_executable(chess-calc
   src/main.cpp
+  src/sdl_helpers.cpp
   src/stockfish.cpp
   src/opening_db.cpp
   src/chess_gui_helpers.cpp
@@ -65,3 +66,28 @@ add_custom_command(TARGET chess-calc POST_BUILD
     ${CMAKE_SOURCE_DIR}/assets
     $<TARGET_FILE_DIR:chess-calc>/assets
 )
+
+# Windows: SDL2_ttf pulls in FreeType/zlib DLLs; they must sit next to the .exe or load fails
+# ("The specified module could not be found"). vcpkg's bin folder has all runtime DLLs.
+if(WIN32)
+  if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+    set(_vcpkg_bin "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin")
+    if(EXISTS "${_vcpkg_bin}")
+      add_custom_command(TARGET chess-calc POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${_vcpkg_bin}" $<TARGET_FILE_DIR:chess-calc>/)
+    endif()
+  else()
+    if(TARGET SDL2::SDL2)
+      add_custom_command(TARGET chess-calc POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          $<TARGET_FILE:SDL2::SDL2>
+          $<TARGET_FILE_DIR:chess-calc>/)
+    endif()
+    if(TARGET SDL2_ttf::SDL2_ttf)
+      add_custom_command(TARGET chess-calc POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          $<TARGET_FILE:SDL2_ttf::SDL2_ttf>
+          $<TARGET_FILE_DIR:chess-calc>/)
+    endif()
+  endif()
+endif()

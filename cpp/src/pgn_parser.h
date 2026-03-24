@@ -187,11 +187,6 @@ public:
                 if (eloOk && !current.moves.empty()) {
                     onGame(current);
                     gamesProcessed++;
-
-                    // Print progress every 100,000 games so you know it's running
-                    if (gamesProcessed % 100000 == 0) {
-                        cout << "Processed " << gamesProcessed << " games...\n";
-                    }
                 }
             }
 
