@@ -116,6 +116,51 @@ make
 - **Stockfish** on PATH when possible; otherwise **Lichess** via **curl** (see Windows table above).  
 - Assets are copied next to the executable by CMake’s `POST_BUILD` step.
 
+### Opening database (`lichess_games.pgn`)
+
+The repo includes **`cpp/lichess_games.pgn`**: many **full** games (random legal play to a finished position, Elo headers **1800–2500**) so the opening trie has depth for “most popular” suggestions. Regenerate after installing **python-chess**:
+
+```bash
+cd cpp/scripts && pip install -r requirements.txt
+```
+
+**Refresh the bundled file** (from the **project root** `Project-2-Chess-Move-Calculator/`):
+
+```bash
+cd cpp/scripts && python3 build_sample_pgn.py --out ../lichess_games.pgn
+```
+
+**If your shell is already in `cpp/`** (prompt ends with `cpp %`), do **not** run `cd cpp/scripts` — use:
+
+```bash
+cd scripts && pip install -r requirements.txt
+python3 build_sample_pgn.py --out ../lichess_games.pgn
+```
+
+**Fetch real rated games** via Lichess’s **official API** (not HTML scraping). You must pass **real** usernames whose games are in your Elo band (GM games are ~3000 and will be **filtered out** by default):
+
+From project root:
+
+```bash
+cd cpp/scripts && python3 fetch_lichess_sample_pgn.py --out ../lichess_games.pgn --min 1800 --max 2500 \
+  --users SomeClubPlayer --users AnotherPlayer --max-games 80
+```
+
+From `cpp/`:
+
+```bash
+python3 scripts/fetch_lichess_sample_pgn.py --out lichess_games.pgn --min 1800 --max 2500 \
+  --users SomeClubPlayer --users AnotherPlayer --max-games 80
+```
+
+**Run the app:** from `cpp/`, use `./chess-calc` alone. A line that starts with `&&` is invalid (`zsh: parse error near &&`); use `&&` only *after* another command, e.g. `make && ./chess-calc`.
+
+**Bulk historical data:** [Lichess database](https://database.lichess.org/) (monthly `.pgn.zst` — decompress and take a slice).  
+
+The app loads games with **both** players rated **1800–2500** and stores up to **40 full moves** per game in the trie (see `PGNParser` in `src/opening_db.cpp`).
+
+Suggestions from the DB **skip non-castling king moves** in the first **14 full moves** (28 plies); otherwise Stockfish is used.
+
 ### Display / aspect ratio (HiDPI, Retina, fractional scaling)
 
 The app uses a **fixed logical size** and **integer scaling** so the board should not look stretched. If something still looks wrong after a **full rebuild** (`make clean && make` or a clean CMake build):

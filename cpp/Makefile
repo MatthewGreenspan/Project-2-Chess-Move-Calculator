@@ -37,7 +37,7 @@ endif
 
 # Rebuild when headers change (only .cpp files are passed to the linker)
 SRCS := src/main.cpp src/sdl_helpers.cpp src/stockfish.cpp src/opening_db.cpp src/chess_gui_helpers.cpp \
-	src/best_move.cpp src/gui_assets.cpp src/gui_render.cpp src/gui_input.cpp src/app_actions.cpp
+	src/best_move.cpp src/opening_suggestion.cpp src/gui_assets.cpp src/gui_render.cpp src/gui_input.cpp src/app_actions.cpp
 HDRS := $(wildcard include/*.hpp src/*.h)
 
 chess-calc: $(SRCS) $(HDRS)

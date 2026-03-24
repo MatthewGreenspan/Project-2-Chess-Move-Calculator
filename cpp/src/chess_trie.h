@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <unordered_map>
@@ -67,6 +68,22 @@ public:
       }
     }
     return bestMove;
+  }
+
+  /** Top child moves at this position, by frequency (for filtering king walks, etc.). */
+  vector<pair<string, int>> getRankedMoves(const vector<string>& playedMoves, int maxMoves) {
+    TrieNode* curr = root;
+    for (const string& move : playedMoves) {
+      auto it = curr->children.find(move);
+      if (it == curr->children.end()) return {};
+      curr = it->second;
+    }
+    vector<pair<string, int>> candidates;
+    for (auto& [move, node] : curr->children) candidates.push_back({move, node->count});
+    sort(candidates.begin(), candidates.end(),
+         [](const pair<string, int>& a, const pair<string, int>& b) { return a.second > b.second; });
+    if ((int)candidates.size() > maxMoves) candidates.resize(maxMoves);
+    return candidates;
   }
 
   void prune(int minCount = 5) { pruneNode(root, minCount); }

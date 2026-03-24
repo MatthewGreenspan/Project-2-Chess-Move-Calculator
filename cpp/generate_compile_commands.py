@@ -13,6 +13,7 @@ SOURCES = [
     "src/opening_db.cpp",
     "src/chess_gui_helpers.cpp",
     "src/best_move.cpp",
+    "src/opening_suggestion.cpp",
     "src/gui_assets.cpp",
     "src/gui_render.cpp",
     "src/gui_input.cpp",

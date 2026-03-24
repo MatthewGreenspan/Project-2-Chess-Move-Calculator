@@ -1,10 +1,17 @@
 #include "best_move.hpp"
 #include "chess_gui_helpers.hpp"
 #include "opening_db.hpp"
+#include "opening_suggestion.hpp"
 #include "stockfish.hpp"
 
 using namespace chess;
 using namespace chess_gui;
+
+namespace {
+
+constexpr int kOpeningPliesSkipKingWalk = 28;
+
+}  // namespace
 
 void clearBestMoveDisplay(App& app) {
   app.bestMoveFrom = -1;
@@ -34,19 +41,22 @@ void updateBestMove(App& app, bool force) {
   }
 
   if (!app.movesPlayed.empty()) {
-    std::string trieBest = g_trie.getBestMove(app.movesPlayed);
-    if (!trieBest.empty()) {
-      app.bestMoveSan = trieBest;
-      app.bestMoveEnglish = "Most popular in your rating range";
+    auto ranked = g_trie.getRankedMoves(app.movesPlayed, 16);
+    const bool inOpening = static_cast<int>(app.movesPlayed.size()) < kOpeningPliesSkipKingWalk;
+    for (const auto& entry : ranked) {
+      const std::string& san = entry.first;
+      if (san.empty()) continue;
+      if (inOpening && sanIsNonCastlingKingMove(san)) continue;
       for (size_t i = 0; i < moves.size(); i++) {
-        if (uci::moveToSan(app.board, moves[i]) == trieBest) {
+        if (uci::moveToSan(app.board, moves[i]) == san) {
+          app.bestMoveSan = san;
+          app.bestMoveEnglish = "Most popular (opening DB)";
           app.bestMoveFrom = moves[i].from().index();
           app.bestMoveTo = moves[i].to().index();
           app.showBestMoveArrow = true;
-          break;
+          return;
         }
       }
-      return;
     }
   }
 

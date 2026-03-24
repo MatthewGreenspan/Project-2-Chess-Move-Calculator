@@ -1,0 +1,2 @@
+# Optional: used only by build_sample_pgn.py to emit legal full games
+chess>=1.10.0
