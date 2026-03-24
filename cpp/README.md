@@ -1,31 +1,115 @@
 # Chess Move Calculator (C++)
 
-Native window app for chess puzzle setup. Drag pieces, use palettes, view best move and possible moves in the sidebar.
+Native SDL2 app: puzzle setup, palettes, Stockfish / Lichess best move, sidebar text.
 
-## Platforms
+## Dependencies (all platforms)
 
-| Platform | Status |
-|----------|--------|
-| **macOS** | Fully supported: `make` in `cpp/` (see below). |
-| **Linux** | Should work: install SDL2, SDL2_ttf, Stockfish; adapt `Makefile` paths if needed. |
-| **Windows** | The UI (`main.cpp`) is portable SDL2. **`stockfish.cpp` uses POSIX `fork()` / pipes**, which **do not compile with MSVC**. Teammates on Windows can: (1) use **WSL2** and build like Linux, (2) use **MSYS2** with a POSIX toolchain if available, or (3) temporarily exclude `stockfish.cpp` and rely on the Lichess HTTP fallback only—**a native Windows Stockfish subprocess still needs a small port** (e.g. `CreateProcess` + pipes). |
+- **SDL2** — window, rendering, input  
+- **SDL2_ttf** — sidebar text (without it, the sidebar is blank)  
+- **CMake** 3.16+  
 
-The repo `.gitignore` is set up so Mac and Windows build junk and IDE files are not committed.
+---
 
-## Build (macOS)
+## Windows build (step by step)
 
-```bash
-brew install sdl2 sdl2_ttf stockfish
-cd cpp
-make
+### 1. Install tools
+
+- **[Visual Studio 2022](https://visualstudio.microsoft.com/)** (or **Build Tools**) with workload **“Desktop development with C++”** (MSVC compiler, Windows SDK).
+- **[CMake](https://cmake.org/download/)** — add to PATH during setup, or use the VS bundled CMake.
+- **[Git for Windows](https://git-scm.com/download/win)** — gives you `git` and **`curl.exe`** on PATH (needed for the Lichess fallback if Stockfish is missing).
+
+### 2. Install vcpkg (once per machine)
+
+In PowerShell or **x64 Native Tools Command Prompt for VS** (recommended):
+
+```powershell
+cd C:\dev
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg
+.\bootstrap-vcpkg.bat
 ```
 
-**Important:** `sdl2_ttf` is required for the sidebar text. Without it, the sidebar will be empty.
+Set an environment variable so CMake can find the toolchain (User or System **VCPKG_ROOT**):
 
-## Run
+`C:\dev\vcpkg` (or wherever you cloned it).
+
+### 3. Build this project
+
+From the repo’s **`cpp`** folder (where **`vcpkg.json`** lives):
+
+```bat
+cd path\to\Project-2-Chess-Move-Calculator\cpp
+```
+
+Install SDL2 + SDL2_ttf via the manifest (same versions for everyone):
+
+```bat
+%VCPKG_ROOT%\vcpkg.exe install --triplet x64-windows
+```
+
+Configure and build with MSVC:
+
+```bat
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
+cmake --build build --config Release
+```
+
+Run:
+
+```bat
+build\Release\chess-calc.exe
+```
+
+`cmake` copies **`assets`** next to **`chess-calc.exe`** automatically.
+
+### 4. Windows extras (optional but useful)
+
+| What | Why |
+|------|-----|
+| **Stockfish** | Best-move analysis. Download from [stockfishchess.org](https://stockfishchess.org/download/), unzip, add the folder containing `stockfish.exe` to **PATH**, or put `stockfish.exe` somewhere already on PATH. |
+| **`curl.exe`** | Lichess API fallback. Usually comes with **Git for Windows**; ensure Git’s `usr\bin` or equivalent is on PATH. |
+
+---
+
+## macOS / Linux (pkg-config)
 
 ```bash
+# macOS
+brew install sdl2 sdl2_ttf pkg-config cmake
+
+# Debian/Ubuntu
+# sudo apt install libsdl2-dev libsdl2-ttf-dev pkg-config cmake
+
+cd cpp
+cmake -B build -S .
+cmake --build build
+./build/chess-calc
+```
+
+---
+
+## Without pkg-config (macOS / Linux only)
+
+If `pkg-config` is missing, point CMake at SDL2’s install prefix:
+
+```bash
+cmake -B build -S . -DCMAKE_PREFIX_PATH=/path/to/sdl2/prefix
+```
+
+---
+
+## Makefile (Unix only)
+
+```bash
+cd cpp
+make
 ./chess-calc
 ```
 
-Stockfish is used for best-move analysis when you click **Calculate best move**. If Stockfish is missing, the app falls back to the Lichess Cloud API (needs `curl` and network). If that fails too, the first legal move is shown.
+---
+
+## Run notes
+
+- Sidebar needs **SDL2_ttf** or text is hidden.  
+- **Stockfish** on PATH when possible; otherwise **Lichess** via **curl** (see Windows table above).  
+- Assets are copied next to the executable by CMake’s `POST_BUILD` step.
