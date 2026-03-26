@@ -3,6 +3,7 @@
 #include "opening_db.hpp"
 #include "opening_suggestion.hpp"
 #include "stockfish.hpp"
+#include "fen_parser.hpp"
 
 using namespace chess;
 using namespace chess_gui;
@@ -39,7 +40,21 @@ void updateBestMove(App& app, bool force) {
     app.bestMoveEnglish = "Game over";
     return;
   }
-
+{
+  std::string bookMove = lookupPositionDBMove(fen);
+  if (!bookMove.empty()) {
+    for (size_t i = 0; i < moves.size(); i++) {
+      if (uci::moveToSan(app.board, moves[i]) == bookMove) {
+        app.bestMoveSan = bookMove;
+        app.bestMoveEnglish = "Book (position DB)";
+        app.bestMoveFrom = moves[i].from().index();
+        app.bestMoveTo = moves[i].to().index();
+        app.showBestMoveArrow = true;
+        return;
+      }
+    }
+  }
+}
   if (!app.movesPlayed.empty()) {
     auto ranked = g_trie.getRankedMoves(app.movesPlayed, 16);
     const bool inOpening = static_cast<int>(app.movesPlayed.size()) < kOpeningPliesSkipKingWalk;

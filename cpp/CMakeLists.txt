@@ -44,6 +44,8 @@ add_executable(chess-calc
   src/gui_render.cpp
   src/gui_input.cpp
   src/app_actions.cpp
+  src/position_db.cpp
+  
 )
 
 target_include_directories(chess-calc PRIVATE
