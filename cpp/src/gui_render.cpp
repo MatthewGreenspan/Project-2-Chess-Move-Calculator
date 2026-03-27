@@ -1,6 +1,7 @@
 #include "gui_render.hpp"
 #include "chess_gui_helpers.hpp"
 #include "gui_constants.hpp"
+#include <algorithm>
 #include <cmath>
 
 using namespace chess;
@@ -19,7 +20,7 @@ static void squareToPixel(const App& app, int boardY, int sqIndex, int& outX, in
   outY = boardY + dispRow * SQUARE_SIZE + SQUARE_SIZE / 2;
 }
 
-static void drawArrow(SDL_Renderer* r, int x1, int y1, int x2, int y2) {
+static void drawArrowTint(SDL_Renderer* r, int x1, int y1, int x2, int y2, Uint8 br, Uint8 bg, Uint8 bb) {
   float dx = (float)(x2 - x1), dy = (float)(y2 - y1);
   float len = std::sqrt(dx * dx + dy * dy);
   if (len < 4.0f) return;
@@ -52,23 +53,36 @@ static void drawArrow(SDL_Renderer* r, int x1, int y1, int x2, int y2) {
   int ax = (int)(backX + perpX * wing), ay = (int)(backY + perpY * wing);
   int bx = (int)(backX - perpX * wing), by = (int)(backY - perpY * wing);
 
-  SDL_SetRenderDrawColor(r, 40, 30, 10, 255);
+  auto dim = [](Uint8 v, int d) -> Uint8 { return (Uint8)(v > (Uint8)d ? v - (Uint8)d : 0); };
+  SDL_SetRenderDrawColor(r, dim(br, 50), dim(bg, 50), dim(bb, 50), 255);
   drawThickLine(x1, y1, sx2, sy2, thick + 3);
   drawThickLine(x2, y2, ax, ay, 4);
   drawThickLine(x2, y2, bx, by, 4);
   drawThickLine(ax, ay, bx, by, 4);
 
-  SDL_SetRenderDrawColor(r, 255, 220, 90, 255);
+  SDL_SetRenderDrawColor(r, br, bg, bb, 255);
   drawThickLine(x1, y1, sx2, sy2, thick);
   SDL_RenderDrawLine(r, x2, y2, ax, ay);
   SDL_RenderDrawLine(r, x2, y2, bx, by);
   SDL_RenderDrawLine(r, ax, ay, bx, by);
 
-  SDL_SetRenderDrawColor(r, 255, 235, 150, 255);
+  SDL_SetRenderDrawColor(r, (Uint8)(std::min(255, (int)br + 25)), (Uint8)(std::min(255, (int)bg + 25)),
+                         (Uint8)(std::min(255, (int)bb + 25)), 255);
   drawThickLine(x1, y1, sx2, sy2, thick - 3);
 }
 
 #if HAVE_TTF
+static void fillTurnButton(SDL_Renderer* r, const SDL_Rect& rect, bool active, bool hover) {
+  if (active)
+    SDL_SetRenderDrawColor(r, hover ? (Uint8)0x36 : (Uint8)0x2a, hover ? (Uint8)0x62 : (Uint8)0x5a,
+                           hover ? (Uint8)0xa8 : (Uint8)0x90, 255);
+  else if (hover)
+    SDL_SetRenderDrawColor(r, 0x22, 0x48, 0x82, 255);
+  else
+    SDL_SetRenderDrawColor(r, 0x0f, 0x34, 0x60, 255);
+  SDL_RenderFillRect(r, &rect);
+}
+
 static void renderText(SDL_Renderer* r, TTF_Font* font, const char* text, int x, int y, Uint8 R, Uint8 G,
                        Uint8 B) {
   if (!font || !text) return;
@@ -166,11 +180,17 @@ void render(App& app) {
                 SQUARE_SIZE);
   }
 
+  if (app.showSecondBestArrow && app.secondBestMoveFrom >= 0 && app.secondBestMoveTo >= 0) {
+    int x1, y1, x2, y2;
+    squareToPixel(app, boardY, app.secondBestMoveFrom, x1, y1);
+    squareToPixel(app, boardY, app.secondBestMoveTo, x2, y2);
+    drawArrowTint(app.renderer, x1, y1, x2, y2, 255, 210, 70);
+  }
   if (app.showBestMoveArrow && app.bestMoveFrom >= 0 && app.bestMoveTo >= 0) {
     int x1, y1, x2, y2;
     squareToPixel(app, boardY, app.bestMoveFrom, x1, y1);
     squareToPixel(app, boardY, app.bestMoveTo, x2, y2);
-    drawArrow(app.renderer, x1, y1, x2, y2);
+    drawArrowTint(app.renderer, x1, y1, x2, y2, 70, 220, 120);
   }
 
   int btnY = PADDING + PALETTE_HEIGHT + PADDING + BOARD_SIZE + PALETTE_HEIGHT + PADDING * 2;
@@ -194,20 +214,18 @@ void render(App& app) {
 
     renderText(app.renderer, app.font, "To move:", sideX + 8, ly, 160, 160, 160);
     ly += 24;
-    SDL_SetRenderDrawColor(app.renderer, 0x0f, 0x34, 0x60, 255);
-    SDL_Rect btnWhite = {sideX + 8, ly, 130, BUTTON_HEIGHT};
-    SDL_Rect btnBlack = {sideX + 146, ly, 130, BUTTON_HEIGHT};
+    /* Left = Black (btn 1), right = White (btn 2). */
+    SDL_Rect btnBlack = {sideX + 8, ly, 130, BUTTON_HEIGHT};
+    SDL_Rect btnWhite = {sideX + 146, ly, 130, BUTTON_HEIGHT};
     bool whiteActive = app.board.sideToMove() == Color::WHITE;
-    if (whiteActive) SDL_SetRenderDrawColor(app.renderer, 0x2a, 0x5a, 0x90, 255);
-    SDL_RenderFillRect(app.renderer, &btnWhite);
-    SDL_SetRenderDrawColor(app.renderer, 0x0f, 0x34, 0x60, 255);
-    if (!whiteActive) SDL_SetRenderDrawColor(app.renderer, 0x2a, 0x5a, 0x90, 255);
-    SDL_RenderFillRect(app.renderer, &btnBlack);
-    renderText(app.renderer, app.font, "White", sideX + 45, ly + 8, 234, 234, 234);
-    renderText(app.renderer, app.font, "Black", sideX + 183, ly + 8, 234, 234, 234);
+    fillTurnButton(app.renderer, btnBlack, !whiteActive, app.hoverSidebarButton == 1);
+    fillTurnButton(app.renderer, btnWhite, whiteActive, app.hoverSidebarButton == 2);
+    renderText(app.renderer, app.font, "Black", sideX + 45, ly + 8, 234, 234, 234);
+    renderText(app.renderer, app.font, "White", sideX + 183, ly + 8, 234, 234, 234);
     ly += BUTTON_HEIGHT + 20;
 
-    SDL_SetRenderDrawColor(app.renderer, 0x1a, 0x6b, 0x4a, 255);
+    bool hoverCalc = app.hoverSidebarButton == 3;
+    SDL_SetRenderDrawColor(app.renderer, hoverCalc ? 0x24 : 0x1a, hoverCalc ? 0x7d : 0x6b, hoverCalc ? 0x58 : 0x4a, 255);
     SDL_Rect btnCalc = {sideX + 8, ly, SIDEBAR_WIDTH - PADDING * 2 - 16, BUTTON_HEIGHT};
     SDL_RenderFillRect(app.renderer, &btnCalc);
     renderText(app.renderer, app.font, "Calculate best move", sideX + 20, ly + 8, 255, 255, 255);
@@ -232,14 +250,32 @@ void render(App& app) {
       }
       if (!app.openingTrieLine.empty()) {
         std::string t = app.openingTrieLine;
-        if (t.size() > 48) t = t.substr(0, 45) + "...";
-        renderText(app.renderer, app.fontSmall, t.c_str(), sideX + 8, ly, 160, 230, 200);
+        if (t.size() > 52) t = t.substr(0, 49) + "...";
+        renderText(app.renderer, app.fontSmall, t.c_str(), sideX + 8, ly, 90, 255, 140);
+        ly += 16;
+      }
+      if (!app.openingTrieSecondLine.empty()) {
+        std::string t = app.openingTrieSecondLine;
+        if (t.size() > 52) t = t.substr(0, 49) + "...";
+        renderText(app.renderer, app.fontSmall, t.c_str(), sideX + 8, ly, 255, 220, 100);
         ly += 16;
       }
       if (!app.openingHashLine.empty()) {
         std::string h = app.openingHashLine;
-        if (h.size() > 48) h = h.substr(0, 45) + "...";
-        renderText(app.renderer, app.fontSmall, h.c_str(), sideX + 8, ly, 200, 180, 230);
+        if (h.size() > 52) h = h.substr(0, 49) + "...";
+        renderText(app.renderer, app.fontSmall, h.c_str(), sideX + 8, ly, 120, 255, 200);
+        ly += 16;
+      }
+      if (!app.openingHashSecondLine.empty()) {
+        std::string h = app.openingHashSecondLine;
+        if (h.size() > 52) h = h.substr(0, 49) + "...";
+        renderText(app.renderer, app.fontSmall, h.c_str(), sideX + 8, ly, 255, 230, 120);
+        ly += 16;
+      }
+      if (!app.openingScanLine.empty()) {
+        std::string s = app.openingScanLine;
+        if (s.size() > 52) s = s.substr(0, 49) + "...";
+        renderText(app.renderer, app.fontSmall, s.c_str(), sideX + 8, ly, 170, 210, 255);
         ly += 16;
       }
       if (!app.moveGradeLine.empty()) {

@@ -107,62 +107,62 @@ CMake copies **`assets`** and vcpkg **runtime DLLs** next to **`chess-calc.exe`*
 The app uses **Stockfish** for:
 
 - **Best move** (when not using the opening book, or after the book window)
-- **Sidebar grade** (depth-14 eval after the suggested move) — **local binary only**
+- **Sidebar grade** (depth-14 eval after the suggested move), with **Lichess** fallback when online
 
 ### Option A — package manager
 
 - **macOS:** `brew install stockfish`
 - **Windows / Linux:** install from [stockfishchess.org](https://stockfishchess.org/download/) and ensure `stockfish` / `stockfish.exe` is on **PATH** (or place the Windows binary under `C:\Program Files\Stockfish\` as documented in the code).
 
-### Option B — project-local binary (any OS)
+### Option B — project-local binary (Unix / Git Bash)
 
 From **`cpp/`**:
 
 ```bash
-python3 scripts/fetch_stockfish.py
+sh scripts/fetch_stockfish.sh
 ```
 
-This downloads the latest official release into **`third_party/stockfish/`** (gitignored). The app checks **`third_party/stockfish/stockfish`** (or **`stockfish.exe`**) before **PATH**.
+This downloads the latest official [Stockfish](https://github.com/official-stockfish/Stockfish) release into **`third_party/stockfish/`** (gitignored). The app checks **`third_party/stockfish/stockfish`** (or **`stockfish.exe`**) before **PATH**. On **Windows** `cmd.exe`, install from [stockfishchess.org](https://stockfishchess.org/download/) or use **Git Bash** to run the script.
 
 ### If Stockfish is missing
 
 - **Best move** falls back to **Lichess cloud eval** (needs **`curl`** and network).
-- **Grades** (Trie / Hash lines and engine line) try **local Stockfish first**, then **Lichess cloud-eval** (`cp` / `mate` from the API) so you still get a numeric grade online.
-
-If `python3 scripts/fetch_stockfish.py` fails with an **SSL certificate** error on macOS, use **`brew install stockfish`** or install certificates for your Python (or run the script with a Python that trusts the system store).
+- **Grades** (Trie / Hash lines and engine line) try **local Stockfish first**, then **Lichess cloud-eval** (`cp` / `mate` from the API) when online.
 
 ---
 
 ## Opening database (`lichess_games.pgn`)
 
-The repo includes **`lichess_games.pgn`** with many **full** games (random legal play, Elo headers **1800–2500**). A **FEN-keyed position hash map** (first 20 plies per game) suggests **Book (position DB)** moves when the current board matches training data. A **move-prefix trie** and a second **prefix hash map** back “most popular” lines; the sidebar can show **Trie vs Hash** lookup timing (nanoseconds) in the opening window.
+The repo includes **`lichess_games.pgn`** with many **full** games. A **FEN-keyed position hash map** (first 20 plies per game) suggests **Book (position DB)** moves when the current board matches training data. A **move-prefix trie** and a second **prefix hash map** back “most popular” lines; the sidebar can show **Trie vs Hash** lookup timing (nanoseconds) in the opening window.
 
-Regenerate (requires **python-chess**):
+**Replacing `lichess_games.pgn`:** use any tool that exports **PGN** (Lichess web export, database downloads, etc.). The loader only needs valid PGN with SAN moves; **no Python** is required for the app.
 
-```bash
-cd cpp/scripts && pip install -r requirements.txt
-python3 build_sample_pgn.py --out ../lichess_games.pgn
-```
-
-If your shell is already in **`cpp/`**:
+**Example — fetch rated games via Lichess API** (requires **`curl`**, then merge or replace the file):
 
 ```bash
-cd scripts && pip install -r requirements.txt
-python3 build_sample_pgn.py --out ../lichess_games.pgn
+curl -s -H "Accept: application/x-chess-pgn" \
+  "https://lichess.org/api/games/user/SomePlayer?max=50&rated=true" >> lichess_games.pgn
 ```
 
-**Fetch real rated games** (Lichess HTTP API):
+Filter by rating in a text editor or use **[Lichess database](https://database.lichess.org/)** for bulk **`.pgn.zst`** files (decompress, then take a slice).
 
-```bash
-cd cpp/scripts && python3 fetch_lichess_sample_pgn.py --out ../lichess_games.pgn --min 1800 --max 2500 \
-  --users SomeClubPlayer --users AnotherPlayer --max-games 80
-```
-
-**Bulk data:** [Lichess database](https://database.lichess.org/).
+---
 
 The app loads games with **both** players rated **1800–2500** and stores up to **40 full moves** per game in the trie/hash map (`PGNParser` in `src/opening_db.cpp`). The book is used only for the **first 20 full moves** (40 half-moves) of the move list; after that, **Stockfish** (or Lichess) is used. In the first **14 full moves**, non-castling **king** suggestions from the DB are skipped.
 
 Editing the board, removing pieces, or switching **To move** clears the move list so the book cannot apply to a mismatched position.
+
+---
+
+## `compile_commands.json` (clangd / IDE)
+
+From **`cpp/`** (requires **CMake**):
+
+```bash
+sh gen_compile_commands.sh
+```
+
+Or: **`make compile_commands`** (same). Uses **`CMAKE_EXPORT_COMPILE_COMMANDS`**, then copies **`build/compile_commands.json`** to **`cpp/compile_commands.json`**.
 
 ---
 

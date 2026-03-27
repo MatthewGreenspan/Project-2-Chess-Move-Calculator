@@ -37,7 +37,8 @@ endif
 
 # Rebuild when headers change (only .cpp files are passed to the linker)
 SRCS := src/main.cpp src/sdl_helpers.cpp src/stockfish.cpp src/opening_db.cpp src/chess_gui_helpers.cpp \
-	src/best_move.cpp src/opening_suggestion.cpp src/gui_assets.cpp src/gui_render.cpp src/gui_input.cpp src/app_actions.cpp src/position_db.cpp 
+	src/best_move.cpp src/opening_suggestion.cpp src/gui_assets.cpp src/gui_render.cpp src/gui_input.cpp src/app_actions.cpp src/position_db.cpp \
+	src/opening_scan.cpp
 HDRS := $(wildcard include/*.hpp src/*.h)
 
 chess-calc: $(SRCS) $(HDRS)
@@ -49,9 +50,9 @@ run: chess-calc
 clean:
 	rm -f chess-calc
 
-# Regenerate compile_commands.json for clangd / IDE (run after changing deps or paths)
+# Regenerate compile_commands.json for clangd / IDE (CMake; run after changing deps or paths)
 compile_commands.json:
-	python3 generate_compile_commands.py
+	sh gen_compile_commands.sh
 
 compile_commands: compile_commands.json
 

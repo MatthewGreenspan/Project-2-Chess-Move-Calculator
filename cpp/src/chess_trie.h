@@ -1,88 +1,107 @@
 #pragma once
+
 #include <algorithm>
 #include <string>
 #include <utility>
-#include <unordered_map>
 #include <vector>
 
-using namespace std;
-
 struct TrieNode {
-  string move;
+  std::string move;
   int count = 0;
-  unordered_map<string, TrieNode*> children;
+  std::vector<std::pair<std::string, TrieNode*>> children;
 
-  explicit TrieNode(string m = "") : move(std::move(m)) {}
+  explicit TrieNode(std::string m = "") : move(std::move(m)) {}
 };
 
 class ChessTrie {
   TrieNode* root;
 
+  static TrieNode* findChild(TrieNode* node, const std::string& m) {
+    if (!node) return nullptr;
+    for (auto& p : node->children)
+      if (p.first == m) return p.second;
+    return nullptr;
+  }
+
+  static TrieNode* getOrCreateChild(TrieNode* node, const std::string& m) {
+    if (TrieNode* c = findChild(node, m)) return c;
+    TrieNode* n = new TrieNode(m);
+    node->children.push_back({m, n});
+    return n;
+  }
+
   void deleteNode(TrieNode* node) {
     if (!node) return;
-    for (auto& [_, child] : node->children) deleteNode(child);
+    for (auto& p : node->children) deleteNode(p.second);
     delete node;
   }
 
   void pruneNode(TrieNode* node, int minCount) {
     if (!node) return;
-    vector<string> toDelete;
-    for (auto& [move, child] : node->children) {
-      if (child->count < minCount) toDelete.push_back(move);
+    std::vector<std::string> toDelete;
+    for (const auto& p : node->children) {
+      if (p.second->count < minCount) toDelete.push_back(p.first);
     }
-    for (const string& move : toDelete) {
-      deleteNode(node->children[move]);
-      node->children.erase(move);
+    for (const std::string& move : toDelete) {
+      for (std::size_t i = 0; i < node->children.size(); ++i) {
+        if (node->children[i].first == move) {
+          deleteNode(node->children[i].second);
+          node->children[i] = std::move(node->children.back());
+          node->children.pop_back();
+          break;
+        }
+      }
     }
-    for (auto& [_, child] : node->children) pruneNode(child, minCount);
+    for (auto& p : node->children) pruneNode(p.second, minCount);
   }
 
-public:
+ public:
   ChessTrie() : root(new TrieNode()) {}
 
   ~ChessTrie() { deleteNode(root); }
 
-  void insertGame(const vector<string>& moves) {
+  void insertGame(const std::vector<std::string>& moves) {
     TrieNode* curr = root;
-    for (const string& move : moves) {
-      if (curr->children.find(move) == curr->children.end())
-        curr->children[move] = new TrieNode(move);
-      curr = curr->children[move];
+    for (const std::string& move : moves) {
+      curr = getOrCreateChild(curr, move);
       curr->count++;
     }
   }
 
-  string getBestMove(const vector<string>& playedMoves) {
+  /** Current node after following played moves, or nullptr if prefix missing. */
+  TrieNode* nodeAfterPrefix(const std::vector<std::string>& playedMoves) const {
     TrieNode* curr = root;
-    for (const string& move : playedMoves) {
-      auto it = curr->children.find(move);
-      if (it == curr->children.end()) return "";
-      curr = it->second;
+    for (const std::string& move : playedMoves) {
+      curr = findChild(curr, move);
+      if (!curr) return nullptr;
     }
-    string bestMove;
+    return curr;
+  }
+
+  std::string getBestMove(const std::vector<std::string>& playedMoves) {
+    TrieNode* curr = nodeAfterPrefix(playedMoves);
+    if (!curr) return "";
+    std::string bestMove;
     int maxCount = 0;
-    for (auto& [move, node] : curr->children) {
-      if (node->count > maxCount) {
-        maxCount = node->count;
-        bestMove = move;
+    for (const auto& p : curr->children) {
+      if (p.second->count > maxCount) {
+        maxCount = p.second->count;
+        bestMove = p.first;
       }
     }
     return bestMove;
   }
 
-  /** Top child moves at this position, by frequency (for filtering king walks, etc.). */
-  vector<pair<string, int>> getRankedMoves(const vector<string>& playedMoves, int maxMoves) {
-    TrieNode* curr = root;
-    for (const string& move : playedMoves) {
-      auto it = curr->children.find(move);
-      if (it == curr->children.end()) return {};
-      curr = it->second;
-    }
-    vector<pair<string, int>> candidates;
-    for (auto& [move, node] : curr->children) candidates.push_back({move, node->count});
-    sort(candidates.begin(), candidates.end(),
-         [](const pair<string, int>& a, const pair<string, int>& b) { return a.second > b.second; });
-    if ((int)candidates.size() > maxMoves) candidates.resize(maxMoves);
+  std::vector<std::pair<std::string, int>> getRankedMoves(const std::vector<std::string>& playedMoves, int maxMoves) {
+    TrieNode* curr = nodeAfterPrefix(playedMoves);
+    if (!curr) return {};
+    std::vector<std::pair<std::string, int>> candidates;
+    for (const auto& p : curr->children) candidates.push_back({p.first, p.second->count});
+    std::sort(candidates.begin(), candidates.end(),
+              [](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+                return a.second > b.second;
+              });
+    if ((int)candidates.size() > maxMoves) candidates.resize((std::size_t)maxMoves);
     return candidates;
   }
 

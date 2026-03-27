@@ -26,7 +26,7 @@ __pycache__/
 # Clangd / IDE
 cpp/.cache/
 
-# C++ — bundled Stockfish (from scripts/fetch_stockfish.py)
+# C++ — bundled Stockfish (from scripts/fetch_stockfish.sh)
 cpp/third_party/stockfish/stockfish
 cpp/third_party/stockfish/stockfish.exe
 cpp/third_party/stockfish/*.tar

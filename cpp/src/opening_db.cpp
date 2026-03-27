@@ -21,6 +21,8 @@ static std::string findPgnPath() {
   return "";
 }
 
+std::string getOpeningPgnPath() { return findPgnPath(); }
+
 static constexpr int MAX_PLY = 20;
 
 void loadOpeningDatabase() {

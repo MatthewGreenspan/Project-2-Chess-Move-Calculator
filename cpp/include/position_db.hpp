@@ -1,63 +1,63 @@
 #pragma once
-#include <string>
-#include <vector>
-#include <unordered_map>
+
+#include "string_hash_map.hpp"
+
 #include <algorithm>
 #include <iostream>
+#include <string>
+#include <vector>
 
 struct MoveEntry {
-    std::string san;
-    int count = 0;
+  std::string san;
+  int count = 0;
 };
 
 class PositionDB {
-public:
-    void record(const std::string& fenKey, const std::string& san) {
-        auto& entries = table_[fenKey];
-        for (auto& e : entries) {
-            if (e.san == san) { ++e.count; return; }
-        }
-        entries.push_back({san, 1});
+ public:
+  void record(const std::string& fenKey, const std::string& san) {
+    std::vector<MoveEntry>& entries = table_[fenKey];
+    for (auto& e : entries) {
+      if (e.san == san) {
+        ++e.count;
+        return;
+      }
     }
+    entries.push_back({san, 1});
+  }
 
-    void prune(int minCount) {
-        for (auto it = table_.begin(); it != table_.end(); ) {
-            auto& entries = it->second;
-            entries.erase(
-                std::remove_if(entries.begin(), entries.end(),
-                    [minCount](const MoveEntry& e){ return e.count < minCount; }),
-                entries.end()
-            );
-            std::sort(entries.begin(), entries.end(),
-                [](const MoveEntry& a, const MoveEntry& b){ return a.count > b.count; });
-            if (entries.empty()) it = table_.erase(it);
-            else                 ++it;
-        }
-    }
+  void prune(int minCount) {
+    std::vector<std::string> dropKeys;
+    table_.forEach([&](const std::string& key, std::vector<MoveEntry>& entries) {
+      entries.erase(std::remove_if(entries.begin(), entries.end(),
+                                   [minCount](const MoveEntry& e) { return e.count < minCount; }),
+                    entries.end());
+      std::sort(entries.begin(), entries.end(),
+                [](const MoveEntry& a, const MoveEntry& b) { return a.count > b.count; });
+      if (entries.empty()) dropKeys.push_back(key);
+    });
+    for (const auto& k : dropKeys) table_.erase(k);
+  }
 
-    const std::vector<MoveEntry>* lookup(const std::string& fenKey) const {
-        auto it = table_.find(fenKey);
-        if (it == table_.end()) return nullptr;
-        return &it->second;
-    }
+  const std::vector<MoveEntry>* lookup(const std::string& fenKey) const {
+    return table_.find(fenKey);
+  }
 
-    std::string bestMove(const std::string& fenKey) const {
-        const auto* entries = lookup(fenKey);
-        if (!entries || entries->empty()) return "";
-        return (*entries)[0].san;
-    }
+  std::string bestMove(const std::string& fenKey) const {
+    const auto* entries = lookup(fenKey);
+    if (!entries || entries->empty()) return "";
+    return (*entries)[0].san;
+  }
 
-    size_t size() const { return table_.size(); }
+  std::size_t size() const { return table_.size(); }
 
-    void printStats() const {
-        size_t total = 0;
-        for (auto& [k, v] : table_) total += v.size();
-        std::cout << "[PositionDB] " << table_.size()
-                  << " positions, " << total << " move entries\n";
-    }
+  void printStats() const {
+    std::size_t total = 0;
+    table_.forEach([&total](const std::string&, const std::vector<MoveEntry>& v) { total += v.size(); });
+    std::cout << "[PositionDB] " << table_.size() << " positions, " << total << " move entries\n";
+  }
 
-private:
-    std::unordered_map<std::string, std::vector<MoveEntry>> table_;
+ private:
+  StringHashMap<std::vector<MoveEntry>> table_;
 };
 
 extern PositionDB g_positionDB;

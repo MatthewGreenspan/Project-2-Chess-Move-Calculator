@@ -8,12 +8,12 @@ The app checks **`third_party/stockfish/stockfish`**, then your **`PATH`**, then
 brew install stockfish
 ```
 
-**Project-local copy** (downloads a release into this folder; uses `curl` for HTTPS):
+**Download into this folder** (bash + curl + tar; no Python):
 
 ```bash
-cd cpp && python3 scripts/fetch_stockfish.py
+cd cpp && sh scripts/fetch_stockfish.sh
 ```
 
-The downloaded `stockfish` binary is gitignored; this README is tracked.
+The downloaded binary is gitignored; this README is tracked.
 
-**Windows / Linux:** install from [stockfishchess.org](https://stockfishchess.org/download/) or use `fetch_stockfish.py` from `cpp/`.
+**Windows:** install from [stockfishchess.org](https://stockfishchess.org/download/) or run **`scripts/fetch_stockfish.sh`** from **Git Bash**.

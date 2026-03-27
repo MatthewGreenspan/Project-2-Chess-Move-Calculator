@@ -86,12 +86,13 @@ int main(int argc, char* argv[]) {
         int pal = getPalettePieceAt(app, e.button.x, e.button.y);
 
         int sideBtn = getSidebarButtonAt(e.button.x, e.button.y);
+        /* Left = Black, right = White (labels and hit boxes align). */
         if (sideBtn == 1) {
           std::string fen = app.board.getFen();
           size_t pos = fen.find(' ');
-          if (pos != std::string::npos) fen = fen.substr(0, pos) + " w" + fen.substr(pos + 2);
+          if (pos != std::string::npos) fen = fen.substr(0, pos) + " b" + fen.substr(pos + 2);
           app.board.setFen(fen);
-          app.boardFlipped = false;
+          app.boardFlipped = true;
           boardToArray(app.board, app.pieces);
           app.movesPlayed.clear();
           updateLegalMoves(app);
@@ -99,9 +100,9 @@ int main(int argc, char* argv[]) {
         } else if (sideBtn == 2) {
           std::string fen = app.board.getFen();
           size_t pos = fen.find(' ');
-          if (pos != std::string::npos) fen = fen.substr(0, pos) + " b" + fen.substr(pos + 2);
+          if (pos != std::string::npos) fen = fen.substr(0, pos) + " w" + fen.substr(pos + 2);
           app.board.setFen(fen);
-          app.boardFlipped = true;
+          app.boardFlipped = false;
           boardToArray(app.board, app.pieces);
           app.movesPlayed.clear();
           updateLegalMoves(app);
@@ -172,6 +173,7 @@ int main(int argc, char* argv[]) {
       } else if (e.type == SDL_MOUSEMOTION) {
         app.mouseX = e.motion.x;
         app.mouseY = e.motion.y;
+        app.hoverSidebarButton = getSidebarButtonAt(e.motion.x, e.motion.y);
       }
     }
     render(app);

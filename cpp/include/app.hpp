@@ -30,6 +30,8 @@ struct App {
   int dragFromPalette = -1;
   int mouseX = 0, mouseY = 0;
   int mouseDownX = 0, mouseDownY = 0;
+  /** From getSidebarButtonAt: -1 none, 1 left turn btn, 2 right turn btn, 3 calculate. */
+  int hoverSidebarButton = -1;
   int selectedSquare = -1;
   std::vector<Square> legalMoveSquares;
   std::string bestMoveUci;
@@ -37,11 +39,17 @@ struct App {
   std::string bestMoveEnglish;
   std::string openingLookupCompare;
   std::string openingTrieLine;
+  std::string openingTrieSecondLine;
   std::string openingHashLine;
+  std::string openingHashSecondLine;
+  std::string openingScanLine;
   std::string moveGradeLine;
   std::string lastAnalyzedFen;
   int bestMoveFrom = -1;
   int bestMoveTo = -1;
+  int secondBestMoveFrom = -1;
+  int secondBestMoveTo = -1;
   bool showBestMoveArrow = false;
+  bool showSecondBestArrow = false;
   bool quit = false;
 };

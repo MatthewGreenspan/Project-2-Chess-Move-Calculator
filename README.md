@@ -32,13 +32,13 @@ Use **`cpp/vcpkg.json`** for SDL2 versions. CMake copies **`assets/`** next to t
 
 ## Stockfish (recommended)
 
-For **best move** and **sidebar grade** (centipawn evaluation), install Stockfish locally or run the fetch script from **`cpp/`**:
+For **best move** and **sidebar grades**, install Stockfish (**`brew install stockfish`** on macOS) or run the **shell** fetch script from **`cpp/`** (requires **`bash`**, **`curl`**, **`tar`**):
 
 ```bash
-python3 scripts/fetch_stockfish.py
+sh scripts/fetch_stockfish.sh
 ```
 
-Without it, **best move** can still use the **Lichess cloud-eval** fallback (needs `curl` and network). **Grading** requires a local engine binary.
+Without a local binary, **best move** can still use the **Lichess cloud-eval** fallback (needs **`curl`** and network). Grades try Stockfish first, then Lichess when online.
 
 ## Run
 
@@ -63,7 +63,7 @@ cpp/
 ├── src/               # SDL2 app, Stockfish UCI, opening DB, GUI
 ├── include/           # chess.hpp, headers
 ├── third_party/stockfish/  # optional local Stockfish (see README there)
-├── scripts/           # PGN + Stockfish fetch helpers
+├── scripts/           # Shell helpers (e.g. download Stockfish)
 ├── vcpkg.json
 ├── assets/
 └── CMakeLists.txt
