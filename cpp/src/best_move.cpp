@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstdio>
 #include <string>
+#include <vector>
 
 using namespace chess;
 using namespace chess_gui;
@@ -17,6 +18,18 @@ namespace {
 constexpr int kOpeningPliesSkipKingWalk = 28;
 constexpr int kMaxOpeningTriePlies = 40;
 
+static std::string formatEvalGradeLabel(int cp, bool mate, int mateIn, const char* src) {
+  if (mate) {
+    if (mateIn > 0)
+      return std::string(src) + ": they mate in " + std::to_string(mateIn) + " (bad for last move)";
+    return std::string(src) + ": you mate in " + std::to_string(-mateIn) + " (good for last move)";
+  }
+  int moverCp = -cp;
+  char buf[144];
+  std::snprintf(buf, sizeof(buf), "%s: %+0.2f pawns (last mover ~cp %d)", src, moverCp / 100.0, moverCp);
+  return std::string(buf);
+}
+
 static std::string formatMoveGrade(const Board& rootBoard, Move m) {
   Board b = rootBoard;
   b.makeMove(m);
@@ -24,17 +37,24 @@ static std::string formatMoveGrade(const Board& rootBoard, Move m) {
   int cp = 0;
   bool mate = false;
   int mateIn = 0;
-  if (!stockfishEvalPosition(fenAfter, cp, mate, mateIn)) return "SF grade: (need local Stockfish)";
+  if (stockfishEvalPosition(fenAfter, cp, mate, mateIn))
+    return formatEvalGradeLabel(cp, mate, mateIn, "SF d14");
+  if (lichessCloudEvalPosition(fenAfter, cp, mate, mateIn))
+    return formatEvalGradeLabel(cp, mate, mateIn, "Lichess");
+  return "Grade: add Stockfish (python3 scripts/fetch_stockfish.py) or use network";
+}
 
-  if (mate) {
-    if (mateIn > 0)
-      return "SF d14: they mate in " + std::to_string(mateIn) + " (bad for last move)";
-    return "SF d14: you mate in " + std::to_string(-mateIn) + " (good for last move)";
+static Move findFirstLegalFromRanked(const Board& board, const Movelist& moves,
+                                     const std::vector<std::pair<std::string, int>>& ranked, bool inOpening) {
+  for (const auto& entry : ranked) {
+    const std::string& san = entry.first;
+    if (san.empty()) continue;
+    if (inOpening && sanIsNonCastlingKingMove(san)) continue;
+    for (size_t i = 0; i < moves.size(); i++) {
+      if (uci::moveToSan(board, moves[i]) == san) return moves[i];
+    }
   }
-  int moverCp = -cp;
-  char buf[112];
-  std::snprintf(buf, sizeof(buf), "SF d14: %+0.2f pawns (last mover ~cp %d)", moverCp / 100.0, moverCp);
-  return std::string(buf);
+  return Move::NO_MOVE;
 }
 
 }  // namespace
@@ -44,6 +64,8 @@ void clearBestMoveDisplay(App& app) {
   app.bestMoveTo = -1;
   app.showBestMoveArrow = false;
   app.openingLookupCompare.clear();
+  app.openingTrieLine.clear();
+  app.openingHashLine.clear();
   app.moveGradeLine.clear();
 }
 
@@ -55,6 +77,8 @@ void updateBestMove(App& app, bool force) {
   app.bestMoveSan = "";
   app.bestMoveEnglish = "";
   app.openingLookupCompare.clear();
+  app.openingTrieLine.clear();
+  app.openingHashLine.clear();
   app.moveGradeLine.clear();
   app.bestMoveFrom = -1;
   app.bestMoveTo = -1;
@@ -103,21 +127,40 @@ void updateBestMove(App& app, bool force) {
     app.openingLookupCompare = cmp;
 
     const bool inOpening = static_cast<int>(app.movesPlayed.size()) < kOpeningPliesSkipKingWalk;
-    for (const auto& entry : rankedTrie) {
-      const std::string& san = entry.first;
-      if (san.empty()) continue;
-      if (inOpening && sanIsNonCastlingKingMove(san)) continue;
-      for (size_t i = 0; i < moves.size(); i++) {
-        if (uci::moveToSan(app.board, moves[i]) == san) {
-          app.bestMoveSan = san;
-          app.bestMoveEnglish = "Most popular (opening DB)";
-          app.bestMoveFrom = moves[i].from().index();
-          app.bestMoveTo = moves[i].to().index();
-          app.showBestMoveArrow = true;
-          app.moveGradeLine = formatMoveGrade(app.board, moves[i]);
-          return;
-        }
-      }
+    Move mt = findFirstLegalFromRanked(app.board, moves, rankedTrie, inOpening);
+    Move mh = findFirstLegalFromRanked(app.board, moves, rankedHash, inOpening);
+
+    if (rankedTrie.empty())
+      app.openingTrieLine = "Trie: (no prefix in DB)";
+    else if (mt == Move::NO_MOVE)
+      app.openingTrieLine = "Trie: (no legal match)";
+    else
+      app.openingTrieLine =
+          "Trie: " + uci::moveToSan(app.board, mt) + " — " + formatMoveGrade(app.board, mt);
+
+    if (rankedHash.empty())
+      app.openingHashLine = "Hash: (no prefix in DB)";
+    else if (mh == Move::NO_MOVE)
+      app.openingHashLine = "Hash: (no legal match)";
+    else
+      app.openingHashLine =
+          "Hash: " + uci::moveToSan(app.board, mh) + " — " + formatMoveGrade(app.board, mh);
+
+    if (mt != Move::NO_MOVE) {
+      app.bestMoveSan = uci::moveToSan(app.board, mt);
+      app.bestMoveEnglish = "Opening DB (arrow = trie)";
+      app.bestMoveFrom = mt.from().index();
+      app.bestMoveTo = mt.to().index();
+      app.showBestMoveArrow = true;
+      return;
+    }
+    if (mh != Move::NO_MOVE) {
+      app.bestMoveSan = uci::moveToSan(app.board, mh);
+      app.bestMoveEnglish = "Opening DB (arrow = hash)";
+      app.bestMoveFrom = mh.from().index();
+      app.bestMoveTo = mh.to().index();
+      app.showBestMoveArrow = true;
+      return;
     }
   }
 

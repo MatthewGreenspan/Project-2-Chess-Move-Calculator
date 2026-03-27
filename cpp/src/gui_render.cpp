@@ -230,6 +230,18 @@ void render(App& app) {
         renderText(app.renderer, app.fontSmall, cmp.c_str(), sideX + 8, ly, 180, 200, 255);
         ly += 16;
       }
+      if (!app.openingTrieLine.empty()) {
+        std::string t = app.openingTrieLine;
+        if (t.size() > 48) t = t.substr(0, 45) + "...";
+        renderText(app.renderer, app.fontSmall, t.c_str(), sideX + 8, ly, 160, 230, 200);
+        ly += 16;
+      }
+      if (!app.openingHashLine.empty()) {
+        std::string h = app.openingHashLine;
+        if (h.size() > 48) h = h.substr(0, 45) + "...";
+        renderText(app.renderer, app.fontSmall, h.c_str(), sideX + 8, ly, 200, 180, 230);
+        ly += 16;
+      }
       if (!app.moveGradeLine.empty()) {
         std::string gr = app.moveGradeLine;
         if (gr.size() > 42) gr = gr.substr(0, 39) + "...";

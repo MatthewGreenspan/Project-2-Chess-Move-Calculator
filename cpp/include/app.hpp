@@ -36,6 +36,8 @@ struct App {
   std::string bestMoveSan;
   std::string bestMoveEnglish;
   std::string openingLookupCompare;
+  std::string openingTrieLine;
+  std::string openingHashLine;
   std::string moveGradeLine;
   std::string lastAnalyzedFen;
   int bestMoveFrom = -1;

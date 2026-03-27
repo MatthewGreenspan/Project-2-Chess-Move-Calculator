@@ -127,7 +127,9 @@ This downloads the latest official release into **`third_party/stockfish/`** (gi
 ### If Stockfish is missing
 
 - **Best move** falls back to **Lichess cloud eval** (needs **`curl`** and network).
-- **Grade** shows *`SF grade: (need local Stockfish)`* — no cloud eval for grading.
+- **Grades** (Trie / Hash lines and engine line) try **local Stockfish first**, then **Lichess cloud-eval** (`cp` / `mate` from the API) so you still get a numeric grade online.
+
+If `python3 scripts/fetch_stockfish.py` fails with an **SSL certificate** error on macOS, use **`brew install stockfish`** or install certificates for your Python (or run the script with a Python that trusts the system store).
 
 ---
 

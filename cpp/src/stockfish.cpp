@@ -72,6 +72,44 @@ static std::string getBestMoveFromLichess(const std::string& fen) {
   return moves;
 }
 
+bool lichessCloudEvalPosition(const std::string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
+  std::string encoded = urlEncodeFen(fen);
+#ifdef _WIN32
+  std::string cmd =
+      "curl.exe -s -m 8 \"https://lichess.org/api/cloud-eval?fen=" + encoded + "\" 2>nul";
+  FILE* f = _popen(cmd.c_str(), "r");
+#else
+  std::string cmd =
+      "curl -s -m 8 \"https://lichess.org/api/cloud-eval?fen=" + encoded + "\" 2>/dev/null";
+  FILE* f = popen(cmd.c_str(), "r");
+#endif
+  if (!f) return false;
+  char buf[8192];
+  std::string json;
+  while (fgets(buf, sizeof(buf), f)) json += buf;
+#ifdef _WIN32
+  _pclose(f);
+#else
+  pclose(f);
+#endif
+  size_t pvs = json.find("\"pvs\"");
+  if (pvs == std::string::npos) return false;
+  std::string tail = json.substr(pvs);
+  size_t mateK = tail.find("\"mate\":");
+  if (mateK != std::string::npos && mateK < 2048) {
+    mateInOut = std::atoi(tail.c_str() + mateK + 7);
+    mateOut = true;
+    return true;
+  }
+  size_t cpK = tail.find("\"cp\":");
+  if (cpK != std::string::npos && cpK < 2048) {
+    cpOut = std::atoi(tail.c_str() + cpK + 5);
+    mateOut = false;
+    return true;
+  }
+  return false;
+}
+
 #ifdef _WIN32
 
 static bool fileExists(const char* p) {

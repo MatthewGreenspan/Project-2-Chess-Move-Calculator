@@ -18,7 +18,7 @@ inline constexpr int SIDEBAR_WIDTH = 300;
 inline constexpr int BOARD_AREA_W = BOARD_SIZE + PADDING * 2;
 inline constexpr int WINDOW_W = BOARD_AREA_W + SIDEBAR_WIDTH;
 inline constexpr int WINDOW_H =
-    PALETTE_HEIGHT + PADDING + BOARD_SIZE + PALETTE_HEIGHT + PADDING + BUTTON_HEIGHT + PADDING * 2;
+    PALETTE_HEIGHT + PADDING + BOARD_SIZE + PALETTE_HEIGHT + PADDING + BUTTON_HEIGHT + PADDING * 2 + 56;
 
 inline constexpr Uint32 COLOR_BOARD_LIGHT = 0xf0d9b5ff;
 inline constexpr Uint32 COLOR_BOARD_DARK = 0xb58863ff;

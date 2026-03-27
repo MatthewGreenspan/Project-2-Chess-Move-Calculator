@@ -1,13 +1,19 @@
 # Bundled Stockfish (optional)
 
-The app looks for a `stockfish` binary here **before** searching your system `PATH`.
+The app checks **`third_party/stockfish/stockfish`**, then your **`PATH`**, then common paths such as **`/opt/homebrew/bin/stockfish`** (Homebrew on Apple Silicon).
 
-From the **`cpp/`** directory, run:
+**macOS (easiest):**
 
 ```bash
-python3 scripts/fetch_stockfish.py
+brew install stockfish
 ```
 
-This downloads the latest official [Stockfish](https://github.com/official-stockfish/Stockfish) release for your OS into this folder. The binary is gitignored; only this README is tracked.
+**Project-local copy** (downloads a release into this folder; uses `curl` for HTTPS):
 
-Alternatively: `brew install stockfish` (macOS) or install from [stockfishchess.org](https://stockfishchess.org/download/) and ensure `stockfish` is on `PATH`.
+```bash
+cd cpp && python3 scripts/fetch_stockfish.py
+```
+
+The downloaded `stockfish` binary is gitignored; this README is tracked.
+
+**Windows / Linux:** install from [stockfishchess.org](https://stockfishchess.org/download/) or use `fetch_stockfish.py` from `cpp/`.
