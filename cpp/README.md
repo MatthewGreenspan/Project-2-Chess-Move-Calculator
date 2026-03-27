@@ -1,12 +1,64 @@
 # Chess Move Calculator (C++)
 
-Native SDL2 app: puzzle setup, palettes, Stockfish / Lichess best move, sidebar text.
+Native SDL2 app: puzzle setup, palettes, opening statistics (trie + hash map), Stockfish best move, optional SF-grade line in the sidebar.
 
 ## Dependencies (all platforms)
 
-- **SDL2** — window, rendering, input  
-- **SDL2_ttf** — sidebar text (without it, the sidebar is blank)  
-- **CMake** 3.16+  
+| Package | Purpose |
+|--------|---------|
+| **SDL2** | Window, rendering, input |
+| **SDL2_ttf** | Sidebar text (without it, the sidebar is blank) |
+| **CMake** 3.16+ | Build |
+
+Optional: **curl** (for Lichess cloud-eval fallback if Stockfish is not installed).
+
+---
+
+## Build (CMake) — recommended
+
+### macOS
+
+```bash
+brew install sdl2 sdl2_ttf pkg-config cmake
+cd cpp
+cmake -B build -S .
+cmake --build build
+./build/chess-calc
+```
+
+### Linux (Debian / Ubuntu)
+
+```bash
+sudo apt install libsdl2-dev libsdl2-ttf-dev pkg-config cmake build-essential
+cd cpp
+cmake -B build -S .
+cmake --build build
+./build/chess-calc
+```
+
+### Run directory
+
+The executable loads **`assets/`** using paths relative to the **current working directory**. Run from **`cpp/`** as above, or copy `assets/` next to the binary if you move it.
+
+### Without pkg-config (macOS / Linux)
+
+```bash
+cmake -B build -S . -DCMAKE_PREFIX_PATH=/path/to/sdl2/prefix
+cmake --build build
+```
+
+---
+
+## Build (Makefile) — macOS / Linux only
+
+From **`cpp/`**:
+
+```bash
+make
+./chess-calc
+```
+
+Produces **`chess-calc`** in **`cpp/`** (not under `build/`). Requires SDL2 and SDL2_ttf via Homebrew or `pkg-config` (see Makefile comments).
 
 ---
 
@@ -14,13 +66,11 @@ Native SDL2 app: puzzle setup, palettes, Stockfish / Lichess best move, sidebar 
 
 ### 1. Install tools
 
-- **[Visual Studio 2022](https://visualstudio.microsoft.com/)** (or **Build Tools**) with workload **“Desktop development with C++”** (MSVC compiler, Windows SDK).
-- **[CMake](https://cmake.org/download/)** — add to PATH during setup, or use the VS bundled CMake.
-- **[Git for Windows](https://git-scm.com/download/win)** — gives you `git` and **`curl.exe`** on PATH (needed for the Lichess fallback if Stockfish is missing).
+- **[Visual Studio 2022](https://visualstudio.microsoft.com/)** (or **Build Tools**) with workload **“Desktop development with C++”** (MSVC, Windows SDK).
+- **[CMake](https://cmake.org/download/)** — add to PATH, or use the VS-bundled CMake.
+- **[Git for Windows](https://git-scm.com/download/win)** — provides **`curl.exe`** (Lichess fallback when Stockfish is missing).
 
 ### 2. Install vcpkg (once per machine)
-
-In PowerShell or **x64 Native Tools Command Prompt for VS** (recommended):
 
 ```powershell
 cd C:\dev
@@ -29,144 +79,101 @@ cd vcpkg
 .\bootstrap-vcpkg.bat
 ```
 
-Set an environment variable so CMake can find the toolchain (User or System **VCPKG_ROOT**):
+Set **`VCPKG_ROOT`** (e.g. `C:\dev\vcpkg`).
 
-`C:\dev\vcpkg` (or wherever you cloned it).
-
-### 3. Build this project
+### 3. Configure and build
 
 From the repo’s **`cpp`** folder (where **`vcpkg.json`** lives):
 
 ```bat
 cd path\to\Project-2-Chess-Move-Calculator\cpp
-```
-
-Install SDL2 + SDL2_ttf via the manifest (same versions for everyone):
-
-```bat
 %VCPKG_ROOT%\vcpkg.exe install --triplet x64-windows
-```
-
-Configure and build with MSVC:
-
-```bat
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
 cmake --build build --config Release
 ```
 
-Run:
+Run (from **`cpp`**):
 
 ```bat
 build\Release\chess-calc.exe
 ```
 
-`cmake` copies **`assets`** next to **`chess-calc.exe`** automatically.
-
-The build also copies **all DLLs from the vcpkg `bin` folder** next to `chess-calc.exe` (SDL2, SDL2_ttf, FreeType, zlib, etc.). That avoids Windows errors like **“The specified module could not be found”** when loading `SDL2_ttf.dll`. Always run the `.exe` from that same folder (e.g. `build\Release\`), or keep those DLLs beside the exe if you move it.
-
-### 4. Windows extras (optional but useful)
-
-| What | Why |
-|------|-----|
-| **Stockfish** | Best-move analysis. Download from [stockfishchess.org](https://stockfishchess.org/download/), unzip, add the folder containing `stockfish.exe` to **PATH**, or put `stockfish.exe` somewhere already on PATH. |
-| **`curl.exe`** | Lichess API fallback. Usually comes with **Git for Windows**; ensure Git’s `usr\bin` or equivalent is on PATH. |
+CMake copies **`assets`** and vcpkg **runtime DLLs** next to **`chess-calc.exe`**. Run the `.exe` from **`build\Release\`** (or keep those DLLs beside the exe if you move it).
 
 ---
 
-## macOS / Linux (pkg-config)
+## Stockfish (local engine)
+
+The app uses **Stockfish** for:
+
+- **Best move** (when not using the opening book, or after the book window)
+- **Sidebar grade** (depth-14 eval after the suggested move) — **local binary only**
+
+### Option A — package manager
+
+- **macOS:** `brew install stockfish`
+- **Windows / Linux:** install from [stockfishchess.org](https://stockfishchess.org/download/) and ensure `stockfish` / `stockfish.exe` is on **PATH** (or place the Windows binary under `C:\Program Files\Stockfish\` as documented in the code).
+
+### Option B — project-local binary (any OS)
+
+From **`cpp/`**:
 
 ```bash
-# macOS
-brew install sdl2 sdl2_ttf pkg-config cmake
-
-# Debian/Ubuntu
-# sudo apt install libsdl2-dev libsdl2-ttf-dev pkg-config cmake
-
-cd cpp
-cmake -B build -S .
-cmake --build build
-./build/chess-calc
+python3 scripts/fetch_stockfish.py
 ```
+
+This downloads the latest official release into **`third_party/stockfish/`** (gitignored). The app checks **`third_party/stockfish/stockfish`** (or **`stockfish.exe`**) before **PATH**.
+
+### If Stockfish is missing
+
+- **Best move** falls back to **Lichess cloud eval** (needs **`curl`** and network).
+- **Grade** shows *`SF grade: (need local Stockfish)`* — no cloud eval for grading.
 
 ---
 
-## Without pkg-config (macOS / Linux only)
+## Opening database (`lichess_games.pgn`)
 
-If `pkg-config` is missing, point CMake at SDL2’s install prefix:
+The repo includes **`lichess_games.pgn`** with many **full** games (random legal play, Elo headers **1800–2500**). A **FEN-keyed position hash map** (first 20 plies per game) suggests **Book (position DB)** moves when the current board matches training data. A **move-prefix trie** and a second **prefix hash map** back “most popular” lines; the sidebar can show **Trie vs Hash** lookup timing (nanoseconds) in the opening window.
 
-```bash
-cmake -B build -S . -DCMAKE_PREFIX_PATH=/path/to/sdl2/prefix
-```
-
----
-
-## Makefile (Unix only)
-
-```bash
-cd cpp
-make
-./chess-calc
-```
-
----
-
-## Run notes
-
-- Sidebar needs **SDL2_ttf** or text is hidden.  
-- **Stockfish** on PATH when possible; otherwise **Lichess** via **curl** (see Windows table above).  
-- Assets are copied next to the executable by CMake’s `POST_BUILD` step.
-
-### Opening database (`lichess_games.pgn`)
-
-The repo includes **`cpp/lichess_games.pgn`**: many **full** games (random legal play to a finished position, Elo headers **1800–2500**) so the opening trie has depth for “most popular” suggestions. Regenerate after installing **python-chess**:
+Regenerate (requires **python-chess**):
 
 ```bash
 cd cpp/scripts && pip install -r requirements.txt
+python3 build_sample_pgn.py --out ../lichess_games.pgn
 ```
 
-**Refresh the bundled file** (from the **project root** `Project-2-Chess-Move-Calculator/`):
-
-```bash
-cd cpp/scripts && python3 build_sample_pgn.py --out ../lichess_games.pgn
-```
-
-**If your shell is already in `cpp/`** (prompt ends with `cpp %`), do **not** run `cd cpp/scripts` — use:
+If your shell is already in **`cpp/`**:
 
 ```bash
 cd scripts && pip install -r requirements.txt
 python3 build_sample_pgn.py --out ../lichess_games.pgn
 ```
 
-**Fetch real rated games** via Lichess’s **official API** (not HTML scraping). You must pass **real** usernames whose games are in your Elo band (GM games are ~3000 and will be **filtered out** by default):
-
-From project root:
+**Fetch real rated games** (Lichess HTTP API):
 
 ```bash
 cd cpp/scripts && python3 fetch_lichess_sample_pgn.py --out ../lichess_games.pgn --min 1800 --max 2500 \
   --users SomeClubPlayer --users AnotherPlayer --max-games 80
 ```
 
-From `cpp/`:
+**Bulk data:** [Lichess database](https://database.lichess.org/).
 
-```bash
-python3 scripts/fetch_lichess_sample_pgn.py --out lichess_games.pgn --min 1800 --max 2500 \
-  --users SomeClubPlayer --users AnotherPlayer --max-games 80
-```
+The app loads games with **both** players rated **1800–2500** and stores up to **40 full moves** per game in the trie/hash map (`PGNParser` in `src/opening_db.cpp`). The book is used only for the **first 20 full moves** (40 half-moves) of the move list; after that, **Stockfish** (or Lichess) is used. In the first **14 full moves**, non-castling **king** suggestions from the DB are skipped.
 
-**Run the app:** from `cpp/`, use `./chess-calc` alone. A line that starts with `&&` is invalid (`zsh: parse error near &&`); use `&&` only *after* another command, e.g. `make && ./chess-calc`.
+Editing the board, removing pieces, or switching **To move** clears the move list so the book cannot apply to a mismatched position.
 
-**Bulk historical data:** [Lichess database](https://database.lichess.org/) (monthly `.pgn.zst` — decompress and take a slice).  
+---
 
-The app loads games with **both** players rated **1800–2500** and stores up to **40 full moves** per game in the trie (see `PGNParser` in `src/opening_db.cpp`).
+## Shell tip
 
-Suggestions from the DB **skip non-castling king moves** in the first **14 full moves** (28 plies); otherwise Stockfish is used.
+Do not start a command line with **`&&`** (e.g. `&& ./chess-calc`); use **`./chess-calc`** alone or chain after a real command: **`make && ./chess-calc`**.
 
-### Display / aspect ratio (HiDPI, Retina, fractional scaling)
+---
 
-The app uses a **fixed logical size** and **integer scaling** so the board should not look stretched. If something still looks wrong after a **full rebuild** (`make clean && make` or a clean CMake build):
+## Display (HiDPI / Retina)
 
-1. Confirm your partner is running a **newly built** binary (not an old copy).
-2. **macOS / Retina:** run with HiDPI disabled for a 1:1 pixel path:  
-   `CHESS_CALC_DISABLE_HIGHDPI=1 ./chess-calc`
-3. **Windows:** same variable in an environment variable or:  
-   `set CHESS_CALC_DISABLE_HIGHDPI=1` then run `chess-calc.exe` from the folder that contains the DLLs.
+If the board looks wrong after a full rebuild:
+
+1. `make clean && make` or a clean CMake build.
+2. **macOS / Retina:** `CHESS_CALC_DISABLE_HIGHDPI=1 ./chess-calc`
+3. **Windows:** set the same environment variable before running `chess-calc.exe`.

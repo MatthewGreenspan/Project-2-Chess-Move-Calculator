@@ -9,6 +9,22 @@
 #include <cstring>
 #include <string>
 
+#include "stockfish.hpp"
+
+static void updateScoreFromUciLine(const char* line, int& cp, int& mateIn, bool& haveCp, bool& haveMate) {
+  const char* cpPos = strstr(line, "score cp ");
+  if (cpPos) {
+    cp = std::atoi(cpPos + 9);
+    haveCp = true;
+    haveMate = false;
+  }
+  const char* mPos = strstr(line, "score mate ");
+  if (mPos) {
+    mateIn = std::atoi(mPos + 11);
+    haveMate = true;
+  }
+}
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -68,6 +84,8 @@ static std::string findStockfish() {
   if (SearchPathA(nullptr, "stockfish.exe", nullptr, sizeof(buf), buf, nullptr) > 0) return std::string(buf);
   if (SearchPathA(nullptr, "stockfish", ".exe", sizeof(buf), buf, nullptr) > 0) return std::string(buf);
   const char* fixed[] = {
+      "third_party\\stockfish\\stockfish.exe",
+      "third_party/stockfish/stockfish.exe",
       "C:\\Program Files\\Stockfish\\stockfish-windows-x86-64-avx2.exe",
       "C:\\Program Files\\Stockfish\\stockfish.exe",
   };
@@ -200,6 +218,114 @@ static std::string runStockfishUci(const std::string& exe, const std::string& fe
   return bestMove;
 }
 
+static bool runStockfishEvalWin(const std::string& exe, const std::string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
+  SECURITY_ATTRIBUTES sa{};
+  sa.nLength = sizeof(sa);
+  sa.bInheritHandle = TRUE;
+
+  HANDLE outRd = nullptr, outWr = nullptr;
+  HANDLE inRd = nullptr, inWr = nullptr;
+  if (!CreatePipe(&outRd, &outWr, &sa, 0)) return false;
+  if (!CreatePipe(&inRd, &inWr, &sa, 0)) {
+    CloseHandle(outRd);
+    CloseHandle(outWr);
+    return false;
+  }
+  SetHandleInformation(outRd, HANDLE_FLAG_INHERIT, 0);
+  SetHandleInformation(inWr, HANDLE_FLAG_INHERIT, 0);
+
+  STARTUPINFOA si{};
+  si.cb = sizeof(si);
+  si.hStdError = outWr;
+  si.hStdOutput = outWr;
+  si.hStdInput = inRd;
+  si.dwFlags |= STARTF_USESTDHANDLES;
+
+  PROCESS_INFORMATION pi{};
+  BOOL ok = CreateProcessA(exe.c_str(), nullptr, nullptr, nullptr, TRUE,
+                           CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
+  CloseHandle(inRd);
+  CloseHandle(outWr);
+  if (!ok) {
+    CloseHandle(outRd);
+    CloseHandle(inWr);
+    return false;
+  }
+
+  auto send = [&](const char* s) { return writeAll(inWr, s, strlen(s)); };
+  std::string line;
+  if (!send("uci\n")) {
+    TerminateProcess(pi.hProcess, 1);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(outRd);
+    CloseHandle(inWr);
+    return false;
+  }
+  while (readLine(outRd, line)) {
+    if (line.find("uciok") != std::string::npos) break;
+    if (line.size() > 10000) break;
+  }
+  if (!send("isready\n")) {
+    TerminateProcess(pi.hProcess, 1);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(outRd);
+    CloseHandle(inWr);
+    return false;
+  }
+  while (readLine(outRd, line)) {
+    if (line.find("readyok") != std::string::npos) break;
+    if (line.size() > 10000) break;
+  }
+
+  if (!send("setoption name Threads value 2\n") || !send("ucinewgame\n")) {
+    TerminateProcess(pi.hProcess, 1);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(outRd);
+    CloseHandle(inWr);
+    return false;
+  }
+  std::string pos = "position fen " + fen + "\n";
+  if (!send(pos.c_str()) || !send("go depth 14\n")) {
+    TerminateProcess(pi.hProcess, 1);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(outRd);
+    CloseHandle(inWr);
+    return false;
+  }
+
+  int cp = 0, mateIn = 0;
+  bool haveCp = false, haveMate = false;
+  int lineCount = 0;
+  const int maxLines = 50000;
+  while (readLine(outRd, line) && ++lineCount < maxLines) {
+    if (line.size() >= 9 && line.compare(0, 9, "bestmove ") == 0) break;
+    updateScoreFromUciLine(line.c_str(), cp, mateIn, haveCp, haveMate);
+  }
+
+  send("quit\n");
+  CloseHandle(inWr);
+  CloseHandle(outRd);
+  WaitForSingleObject(pi.hProcess, 8000);
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
+
+  if (!haveCp && !haveMate) return false;
+  cpOut = cp;
+  mateOut = haveMate;
+  mateInOut = mateIn;
+  return true;
+}
+
+bool stockfishEvalPosition(const std::string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
+  std::string exe = findStockfish();
+  if (exe.empty()) return false;
+  return runStockfishEvalWin(exe, fen, cpOut, mateOut, mateInOut);
+}
+
 std::string getBestMoveFromStockfish(const std::string& fen, int) {
   std::string exe = findStockfish();
   if (exe.empty()) return getBestMoveFromLichess(fen);
@@ -211,11 +337,78 @@ std::string getBestMoveFromStockfish(const std::string& fen, int) {
 #else
 
 static std::string findStockfish() {
-  const char* paths[] = {"stockfish", "/opt/homebrew/bin/stockfish", "/usr/local/bin/stockfish"};
+  const char* paths[] = {"third_party/stockfish/stockfish", "./third_party/stockfish/stockfish", "stockfish",
+                           "/opt/homebrew/bin/stockfish", "/usr/local/bin/stockfish"};
   for (const char* p : paths) {
     if (access(p, X_OK) == 0) return p;
   }
   return "";
+}
+
+bool stockfishEvalPosition(const std::string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
+  std::string exe = findStockfish();
+  if (exe.empty()) return false;
+
+  int toEngine[2], fromEngine[2];
+  if (pipe(toEngine) != 0 || pipe(fromEngine) != 0) return false;
+
+  pid_t pid = fork();
+  if (pid < 0) return false;
+  if (pid == 0) {
+    close(toEngine[1]);
+    close(fromEngine[0]);
+    dup2(toEngine[0], STDIN_FILENO);
+    dup2(fromEngine[1], STDOUT_FILENO);
+    close(toEngine[0]);
+    close(fromEngine[1]);
+    execlp(exe.c_str(), "stockfish", nullptr);
+    _exit(127);
+  }
+  close(toEngine[0]);
+  close(fromEngine[1]);
+
+  FILE* out = fdopen(fromEngine[0], "r");
+  FILE* in = fdopen(toEngine[1], "w");
+  if (!out || !in) {
+    if (out) fclose(out);
+    if (in) fclose(in);
+    return false;
+  }
+
+  char line[1024];
+  fprintf(in, "uci\n");
+  fflush(in);
+  while (fgets(line, sizeof(line), out) && strstr(line, "uciok") == nullptr) {}
+
+  fprintf(in, "isready\n");
+  fflush(in);
+  while (fgets(line, sizeof(line), out) && strstr(line, "readyok") == nullptr) {}
+
+  fprintf(in, "setoption name Threads value 2\n");
+  fprintf(in, "ucinewgame\n");
+  fprintf(in, "position fen %s\n", fen.c_str());
+  fprintf(in, "go depth 14\n");
+  fflush(in);
+
+  int cp = 0, mateIn = 0;
+  bool haveCp = false, haveMate = false;
+  int lineCount = 0;
+  const int maxLines = 50000;
+  while (fgets(line, sizeof(line), out) && ++lineCount < maxLines) {
+    if (strncmp(line, "bestmove ", 9) == 0) break;
+    updateScoreFromUciLine(line, cp, mateIn, haveCp, haveMate);
+  }
+
+  fprintf(in, "quit\n");
+  fflush(in);
+  fclose(in);
+  fclose(out);
+
+  if (!haveCp && !haveMate) return false;
+  cpOut = cp;
+  mateOut = haveMate;
+  mateInOut = mateIn;
+  return true;
 }
 
 std::string getBestMoveFromStockfish(const std::string& fen, int /* movetimeMs */) {

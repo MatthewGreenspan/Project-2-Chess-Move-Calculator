@@ -25,6 +25,7 @@ void doDrop(App& app, int toSquare) {
     if (app.board.setFen(fen)) app.selectedSquare = -1;
     app.dragFromPalette = -1;
   }
+  app.movesPlayed.clear();
   chess_gui::updateLegalMoves(app);
   clearBestMoveDisplay(app);
 }
@@ -37,6 +38,7 @@ void doRemove(App& app) {
     app.dragFrom = -1;
     app.selectedSquare = -1;
     app.legalMoveSquares.clear();
+    app.movesPlayed.clear();
     clearBestMoveDisplay(app);
   }
 }

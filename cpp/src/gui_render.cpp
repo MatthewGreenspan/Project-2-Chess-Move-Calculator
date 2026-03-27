@@ -224,6 +224,18 @@ void render(App& app) {
         renderText(app.renderer, app.fontSmall, eng.c_str(), sideX + 8, ly, 200, 200, 200);
         ly += 16;
       }
+      if (!app.openingLookupCompare.empty()) {
+        std::string cmp = app.openingLookupCompare;
+        if (cmp.size() > 42) cmp = cmp.substr(0, 39) + "...";
+        renderText(app.renderer, app.fontSmall, cmp.c_str(), sideX + 8, ly, 180, 200, 255);
+        ly += 16;
+      }
+      if (!app.moveGradeLine.empty()) {
+        std::string gr = app.moveGradeLine;
+        if (gr.size() > 42) gr = gr.substr(0, 39) + "...";
+        renderText(app.renderer, app.fontSmall, gr.c_str(), sideX + 8, ly, 220, 200, 140);
+        ly += 16;
+      }
     } else {
       renderText(app.renderer, app.fontSmall, "Click button above", sideX + 8, ly, 160, 160, 160);
       ly += 16;

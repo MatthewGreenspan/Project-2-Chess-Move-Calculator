@@ -1,19 +1,23 @@
 # Chess Move Calculator
 
-Native C++ chess puzzle setup app — drag pieces to set up positions, use palettes for promotions. Opens as a window on your desktop.
+Native C++ chess puzzle app — drag pieces to set up positions, palettes for promotions, opening statistics, and engine-backed best move. Opens as a desktop window.
 
-## Build
+**Full build and run instructions:** **[cpp/README.md](cpp/README.md)**
 
-**Full instructions (Windows, macOS, Linux, vcpkg, CMake):** **[cpp/README.md](cpp/README.md)**
-
-### macOS / Linux (short)
+## Quick build (macOS / Linux)
 
 ```bash
-brew install sdl2 sdl2_ttf pkg-config cmake   # macOS; use apt on Debian/Ubuntu — see cpp/README.md
+brew install sdl2 sdl2_ttf pkg-config cmake   # macOS; Debian/Ubuntu: see cpp/README.md
 cd cpp && cmake -B build -S . && cmake --build build && ./build/chess-calc
 ```
 
-### Windows (short)
+Or with **Make** (Unix, from `cpp/`):
+
+```bash
+cd cpp && make && ./chess-calc
+```
+
+## Quick build (Windows)
 
 Install **Visual Studio** (C++ workload), **CMake**, and **[vcpkg](https://github.com/microsoft/vcpkg)**. Set **`VCPKG_ROOT`**, then from **`cpp/`**:
 
@@ -24,13 +28,21 @@ cmake --build build --config Release
 build\Release\chess-calc.exe
 ```
 
-Details, Stockfish, and `curl` are in **[cpp/README.md](cpp/README.md)**. The repo includes **`cpp/vcpkg.json`** so SDL2 versions match across machines.
+Use **`cpp/vcpkg.json`** for SDL2 versions. CMake copies **`assets/`** next to the executable.
 
-**Makefile** (`make` in `cpp/`) works on **macOS/Linux only** if you prefer not to use CMake there.
+## Stockfish (recommended)
+
+For **best move** and **sidebar grade** (centipawn evaluation), install Stockfish locally or run the fetch script from **`cpp/`**:
+
+```bash
+python3 scripts/fetch_stockfish.py
+```
+
+Without it, **best move** can still use the **Lichess cloud-eval** fallback (needs `curl` and network). **Grading** requires a local engine binary.
 
 ## Run
 
-Use the `chess-calc` binary next to the `assets/` folder (CMake copies assets on build; with `make`, run from `cpp/`).
+Run the executable from the **`cpp/`** directory (or keep `assets/` next to the binary — CMake does this automatically).
 
 ## Usage
 
@@ -41,19 +53,19 @@ Use the `chess-calc` binary next to the `assets/` folder (CMake copies assets on
 - **Drag pieces onto palettes** to remove them from the board
 - **Reset** — clear and start over
 - **White to move** / **Black to move** — set whose turn and flip the board view
-- **Sidebar** — turn, best move, possible moves, FEN (needs SDL2_ttf)
+- **Calculate best move** — opening DB (trie + hash timing) or Stockfish; optional **SF grade** line in the sidebar
+- **Sidebar** — turn, best move, possible moves, FEN (needs **SDL2_ttf**)
 
 ## Project structure
 
 ```
 cpp/
-├── src/main.cpp       # GUI app (SDL2)
-├── src/stockfish.cpp  # Engine + Lichess fallback
-├── include/chess.hpp  # Chess logic library
-├── vcpkg.json         # Pinned SDL2 deps (Windows / vcpkg)
+├── src/               # SDL2 app, Stockfish UCI, opening DB, GUI
+├── include/           # chess.hpp, headers
+├── third_party/stockfish/  # optional local Stockfish (see README there)
+├── scripts/           # PGN + Stockfish fetch helpers
+├── vcpkg.json
 ├── assets/
-│   ├── white/         # Piece PNGs
-│   └── black/
 └── CMakeLists.txt
 ```
 
@@ -62,7 +74,7 @@ cpp/
 - **SDL2** — window, rendering, input  
 - **SDL2_ttf** — sidebar text  
 - **stb_image** — PNG loading (bundled in `include/stb_image.h`)  
-- **chess-library** — move generation, FEN (bundled in `include/chess.hpp`)  
+- **chess.hpp** — move generation, FEN (bundled in `include/chess.hpp`)  
 
 ## Assets
 

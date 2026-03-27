@@ -22,6 +22,12 @@ $RECYCLE.BIN/
 # Clangd / IDE
 cpp/.cache/
 
+# C++ — bundled Stockfish (from scripts/fetch_stockfish.py)
+cpp/third_party/stockfish/stockfish
+cpp/third_party/stockfish/stockfish.exe
+cpp/third_party/stockfish/*.tar
+cpp/third_party/stockfish/*.zip
+
 # C++ — build outputs (macOS / Linux)
 cpp/build/
 cpp/chess-calc

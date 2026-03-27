@@ -93,6 +93,7 @@ int main(int argc, char* argv[]) {
           app.board.setFen(fen);
           app.boardFlipped = false;
           boardToArray(app.board, app.pieces);
+          app.movesPlayed.clear();
           updateLegalMoves(app);
           clearBestMoveDisplay(app);
         } else if (sideBtn == 2) {
@@ -102,6 +103,7 @@ int main(int argc, char* argv[]) {
           app.board.setFen(fen);
           app.boardFlipped = true;
           boardToArray(app.board, app.pieces);
+          app.movesPlayed.clear();
           updateLegalMoves(app);
           clearBestMoveDisplay(app);
         } else if (sideBtn == 3) {
