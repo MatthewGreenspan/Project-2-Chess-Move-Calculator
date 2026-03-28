@@ -38,6 +38,8 @@ struct App {
   std::string bestMoveSan;
   std::string bestMoveEnglish;
   std::string openingLookupCompare;
+  std::string trieTimingLine;
+  std::string hashTimingLine;
   std::string openingTrieLine;
   std::string openingTrieSecondLine;
   std::string openingHashLine;

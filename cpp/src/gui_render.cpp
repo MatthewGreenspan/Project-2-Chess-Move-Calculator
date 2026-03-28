@@ -3,6 +3,7 @@
 #include "gui_constants.hpp"
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 using namespace chess;
 using namespace chess_gui;
@@ -11,6 +12,20 @@ static void drawPiece(SDL_Renderer* r, SDL_Texture* tex, int x, int y, int size)
   if (!tex) return;
   SDL_Rect dst = {x, y, size, size};
   SDL_RenderCopy(r, tex, nullptr, &dst);
+}
+
+static std::string clampText(const std::string& text, std::size_t maxLen) {
+  if (text.size() <= maxLen) return text;
+  if (maxLen <= 3) return text.substr(0, maxLen);
+  return text.substr(0, maxLen - 3) + "...";
+}
+
+static void drawSidebarCard(SDL_Renderer* r, int x, int y, int w, int h) {
+  SDL_Rect rect = {x, y, w, h};
+  SDL_SetRenderDrawColor(r, 0x1c, 0x29, 0x4b, 255);
+  SDL_RenderFillRect(r, &rect);
+  SDL_SetRenderDrawColor(r, 0x2d, 0x3d, 0x66, 255);
+  SDL_RenderDrawRect(r, &rect);
 }
 
 static void squareToPixel(const App& app, int boardY, int sqIndex, int& outX, int& outY) {
@@ -124,11 +139,11 @@ void render(App& app) {
                 PADDING + PALETTE_HEIGHT + PADDING + BOARD_SIZE + PADDING + 6, pieceSize);
   }
 
- int boardY = PADDING + PALETTE_HEIGHT + PADDING;
-for (int row = 0; row < 8; row++) {
-  int logicalRow = app.boardFlipped ? row : (7 - row);
-  for (int col = 0; col < 8; col++) {
-    int sq = logicalRow * 8 + col;
+  int boardY = PADDING + PALETTE_HEIGHT + PADDING;
+  for (int row = 0; row < 8; row++) {
+    int logicalRow = app.boardFlipped ? row : (7 - row);
+    for (int col = 0; col < 8; col++) {
+      int sq = logicalRow * 8 + col;
       Uint32 c = ((logicalRow + col) % 2 == 0) ? COLOR_BOARD_LIGHT : COLOR_BOARD_DARK;
       bool isLegal = false;
       for (const auto& ls : app.legalMoveSquares)
@@ -211,6 +226,8 @@ for (int row = 0; row < 8; row++) {
 #if HAVE_TTF
   if (app.font) {
     int ly = PADDING + 8;
+    const int cardX = sideX + 8;
+    const int cardW = SIDEBAR_WIDTH - PADDING * 2 - 16;
 
     renderText(app.renderer, app.font, "To move:", sideX + 8, ly, 160, 160, 160);
     ly += 24;
@@ -229,66 +246,57 @@ for (int row = 0; row < 8; row++) {
     SDL_Rect btnCalc = {sideX + 8, ly, SIDEBAR_WIDTH - PADDING * 2 - 16, BUTTON_HEIGHT};
     SDL_RenderFillRect(app.renderer, &btnCalc);
     renderText(app.renderer, app.font, "Calculate best move", sideX + 20, ly + 8, 255, 255, 255);
-    ly += BUTTON_HEIGHT + 12;
+    ly += BUTTON_HEIGHT + 14;
 
-    renderText(app.renderer, app.font, "Best move:", sideX + 8, ly, 160, 160, 160);
-    ly += 20;
+    drawSidebarCard(app.renderer, cardX, ly, cardW, 146);
+    renderText(app.renderer, app.font, "Recommendation", cardX + 10, ly + 8, 210, 220, 235);
+    int cardLy = ly + 34;
     if (!app.bestMoveSan.empty()) {
-      renderText(app.renderer, app.fontSmall, app.bestMoveSan.c_str(), sideX + 8, ly, 100, 255, 150);
-      ly += 16;
+      renderText(app.renderer, app.fontSmall, clampText("Move: " + app.bestMoveSan, 30).c_str(), cardX + 10, cardLy,
+                 100, 255, 150);
+      cardLy += 16;
       if (!app.bestMoveEnglish.empty()) {
-        std::string eng = app.bestMoveEnglish;
-        if (eng.size() > 38) eng = eng.substr(0, 35) + "...";
-        renderText(app.renderer, app.fontSmall, eng.c_str(), sideX + 8, ly, 200, 200, 200);
-        ly += 16;
-      }
-      if (!app.openingLookupCompare.empty()) {
-        std::string cmp = app.openingLookupCompare;
-        if (cmp.size() > 42) cmp = cmp.substr(0, 39) + "...";
-        renderText(app.renderer, app.fontSmall, cmp.c_str(), sideX + 8, ly, 180, 200, 255);
-        ly += 16;
-      }
-      if (!app.openingTrieLine.empty()) {
-        std::string t = app.openingTrieLine;
-        if (t.size() > 52) t = t.substr(0, 49) + "...";
-        renderText(app.renderer, app.fontSmall, t.c_str(), sideX + 8, ly, 90, 255, 140);
-        ly += 16;
-      }
-      if (!app.openingTrieSecondLine.empty()) {
-        std::string t = app.openingTrieSecondLine;
-        if (t.size() > 52) t = t.substr(0, 49) + "...";
-        renderText(app.renderer, app.fontSmall, t.c_str(), sideX + 8, ly, 255, 220, 100);
-        ly += 16;
-      }
-      if (!app.openingHashLine.empty()) {
-        std::string h = app.openingHashLine;
-        if (h.size() > 52) h = h.substr(0, 49) + "...";
-        renderText(app.renderer, app.fontSmall, h.c_str(), sideX + 8, ly, 120, 255, 200);
-        ly += 16;
-      }
-      if (!app.openingHashSecondLine.empty()) {
-        std::string h = app.openingHashSecondLine;
-        if (h.size() > 52) h = h.substr(0, 49) + "...";
-        renderText(app.renderer, app.fontSmall, h.c_str(), sideX + 8, ly, 255, 230, 120);
-        ly += 16;
-      }
-      if (!app.openingScanLine.empty()) {
-        std::string s = app.openingScanLine;
-        if (s.size() > 52) s = s.substr(0, 49) + "...";
-        renderText(app.renderer, app.fontSmall, s.c_str(), sideX + 8, ly, 170, 210, 255);
-        ly += 16;
+        renderText(app.renderer, app.fontSmall, clampText("Source: " + app.bestMoveEnglish, 34).c_str(), cardX + 10,
+                   cardLy, 200, 200, 200);
+        cardLy += 16;
       }
       if (!app.moveGradeLine.empty()) {
-        std::string gr = app.moveGradeLine;
-        if (gr.size() > 42) gr = gr.substr(0, 39) + "...";
-        renderText(app.renderer, app.fontSmall, gr.c_str(), sideX + 8, ly, 220, 200, 140);
-        ly += 16;
+        renderText(app.renderer, app.fontSmall, clampText("Eval: " + app.moveGradeLine, 34).c_str(), cardX + 10,
+                   cardLy, 220, 200, 140);
+        cardLy += 16;
       }
+      renderText(app.renderer, app.fontSmall,
+                 clampText(app.openingTrieLine.empty() ? "Trie #1: no data" : app.openingTrieLine, 36).c_str(),
+                 cardX + 10, cardLy, 90, 255, 140);
+      cardLy += 16;
+      if (!app.openingTrieSecondLine.empty()) {
+        renderText(app.renderer, app.fontSmall, clampText(app.openingTrieSecondLine, 36).c_str(), cardX + 10, cardLy,
+                   255, 220, 100);
+        cardLy += 16;
+      }
+      renderText(app.renderer, app.fontSmall,
+                 clampText(app.openingHashLine.empty() ? "Hash #1: no data" : app.openingHashLine, 36).c_str(),
+                 cardX + 10, cardLy, 120, 255, 200);
+      cardLy += 16;
+      if (!app.openingHashSecondLine.empty())
+        renderText(app.renderer, app.fontSmall, clampText(app.openingHashSecondLine, 36).c_str(), cardX + 10, cardLy,
+                   255, 230, 120);
     } else {
-      renderText(app.renderer, app.fontSmall, "Click button above", sideX + 8, ly, 160, 160, 160);
-      ly += 16;
+      renderText(app.renderer, app.fontSmall, "Press Calculate best move", cardX + 10, cardLy, 160, 160, 160);
     }
-    ly += 12;
+    ly += 154;
+
+    drawSidebarCard(app.renderer, cardX, ly, cardW, 76);
+    renderText(app.renderer, app.font, "Timing", cardX + 10, ly + 8, 210, 220, 235);
+    cardLy = ly + 34;
+    renderText(app.renderer, app.fontSmall,
+               clampText(app.trieTimingLine.empty() ? "Trie time: no data" : app.trieTimingLine, 36).c_str(),
+               cardX + 10, cardLy, 180, 200, 255);
+    cardLy += 16;
+    renderText(app.renderer, app.fontSmall,
+               clampText(app.hashTimingLine.empty() ? "Hash time: no data" : app.hashTimingLine, 36).c_str(),
+               cardX + 10, cardLy, 170, 210, 255);
+    ly += 84;
 
     renderText(app.renderer, app.font, "Possible moves:", sideX + 8, ly, 160, 160, 160);
     ly += 20;
@@ -311,12 +319,6 @@ for (int row = 0; row < 8; row++) {
         }
       }
     }
-    ly += 16;
-
-    renderText(app.renderer, app.font, "FEN:", sideX + 8, ly, 160, 160, 160);
-    std::string fen = app.board.getFen();
-    if (fen.size() > 45) fen = fen.substr(0, 42) + "...";
-    renderText(app.renderer, app.fontSmall, fen.c_str(), sideX + 8, ly + 16, 200, 200, 200);
   }
 #endif
 

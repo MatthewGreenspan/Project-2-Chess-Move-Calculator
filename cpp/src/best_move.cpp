@@ -121,6 +121,8 @@ void updateBestMove(App& app, bool force) {
   app.bestMoveSan = "";
   app.bestMoveEnglish = "";
   app.openingLookupCompare.clear();
+  app.trieTimingLine.clear();
+  app.hashTimingLine.clear();
   app.openingTrieLine.clear();
   app.openingTrieSecondLine.clear();
   app.openingHashLine.clear();
@@ -145,8 +147,7 @@ void updateBestMove(App& app, bool force) {
     return;
   }
 
-    bool hasPositionDbMove = false;
-
+  bool hasPositionDbMove = false;
   {
     std::string bookMove = lookupPositionDBMove(fen);
     if (!bookMove.empty()) {
@@ -175,11 +176,11 @@ void updateBestMove(App& app, bool force) {
     long long nsHash = std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count();
     double msTrie = nsTrie / 1e6;
     double msHash = nsHash / 1e6;
-    const char* faster = nsTrie < nsHash ? "Trie faster" : (nsHash < nsTrie ? "Hash faster" : "tie");
-    char cmp[200];
-    std::snprintf(cmp, sizeof(cmp), "Trie %.3f ms (%lld ns) | Hash %.3f ms (%lld ns) — %s", msTrie,
-                  (long long)nsTrie, msHash, (long long)nsHash, faster);
-    app.openingLookupCompare = cmp;
+    char timingBuf[128];
+    std::snprintf(timingBuf, sizeof(timingBuf), "Trie time: %.3f ms (%lld ns)", msTrie, (long long)nsTrie);
+    app.trieTimingLine = timingBuf;
+    std::snprintf(timingBuf, sizeof(timingBuf), "Hash time: %.3f ms (%lld ns)", msHash, (long long)nsHash);
+    app.hashTimingLine = timingBuf;
 
     const bool inOpening = static_cast<int>(app.movesPlayed.size()) < kOpeningPliesSkipKingWalk;
 
@@ -197,32 +198,26 @@ void updateBestMove(App& app, bool force) {
       mh2 = findFirstLegalFromRanked(app.board, moves, sub, inOpening);
     }
 
-    auto buildTwoLines = [&](const char* label, Move m1, Move m2, long long ns, double ms,
-                             std::string& line1, std::string& line2) {
+    auto buildTwoLines = [&](const char* label, Move m1, Move m2, std::string& line1, std::string& line2) {
       char buf[320];
       if (m1 == Move::NO_MOVE) {
-        std::snprintf(buf, sizeof(buf), "%s: %.3f ms (%lld ns) — (no legal book move)", label, ms, (long long)ns);
+        std::snprintf(buf, sizeof(buf), "%s #1: no legal book move", label);
         line1 = buf;
         line2.clear();
         return;
       }
       int s1 = scorePercentForMove(app.board, m1);
-      std::string g1 = formatMoveGrade(app.board, m1);
       if (s1 < 0)
-        std::snprintf(buf, sizeof(buf), "%s: %.3f ms | #1 %s — %s", label, ms, uci::moveToSan(app.board, m1).c_str(),
-                      g1.c_str());
+        std::snprintf(buf, sizeof(buf), "%s #1: %s", label, uci::moveToSan(app.board, m1).c_str());
       else
-        std::snprintf(buf, sizeof(buf), "%s: %.3f ms | #1 %s score %d/100 — %s", label, ms,
-                      uci::moveToSan(app.board, m1).c_str(), s1, g1.c_str());
+        std::snprintf(buf, sizeof(buf), "%s #1: %s score %d/100", label, uci::moveToSan(app.board, m1).c_str(), s1);
       line1 = buf;
       if (m2 != Move::NO_MOVE && m2 != m1) {
         int s2 = scorePercentForMove(app.board, m2);
-        std::string g2 = formatMoveGrade(app.board, m2);
         if (s2 < 0)
-          std::snprintf(buf, sizeof(buf), "%s #2: %s — %s", label, uci::moveToSan(app.board, m2).c_str(), g2.c_str());
+          std::snprintf(buf, sizeof(buf), "%s #2: %s", label, uci::moveToSan(app.board, m2).c_str());
         else
-          std::snprintf(buf, sizeof(buf), "%s #2: %s score %d/100 — %s", label,
-                        uci::moveToSan(app.board, m2).c_str(), s2, g2.c_str());
+          std::snprintf(buf, sizeof(buf), "%s #2: %s score %d/100", label, uci::moveToSan(app.board, m2).c_str(), s2);
         line2 = buf;
       } else {
         line2.clear();
@@ -230,16 +225,16 @@ void updateBestMove(App& app, bool force) {
     };
 
     if (rankedTrie.empty()) {
-      app.openingTrieLine = "Trie: (no prefix in DB)";
+      app.openingTrieLine = "Trie #1: no prefix in DB";
       app.openingTrieSecondLine.clear();
     } else
-      buildTwoLines("Trie", mt1, mt2, nsTrie, msTrie, app.openingTrieLine, app.openingTrieSecondLine);
+      buildTwoLines("Trie", mt1, mt2, app.openingTrieLine, app.openingTrieSecondLine);
 
     if (rankedHash.empty()) {
-      app.openingHashLine = "Hash: (no prefix in DB)";
+      app.openingHashLine = "Hash #1: no prefix in DB";
       app.openingHashSecondLine.clear();
     } else
-      buildTwoLines("Hash", mh1, mh2, nsHash, msHash, app.openingHashLine, app.openingHashSecondLine);
+      buildTwoLines("Hash", mh1, mh2, app.openingHashLine, app.openingHashSecondLine);
 
     PgnScanResult scan = scanPgnForNextMoves(getOpeningPgnPath(), app.movesPlayed, kScanTimeLimitMs, kScanConfidence,
                                              kScanMinGames);
@@ -294,7 +289,9 @@ void updateBestMove(App& app, bool force) {
       return;
     }
   }
-if (hasPositionDbMove) return;
+
+  if (hasPositionDbMove) return;
+
   std::string uci = getBestMoveFromStockfish(fen, 400);
   Move m = Move::NO_MOVE;
   if (!uci.empty()) m = uci::uciToMove(app.board, uci);
