@@ -11,16 +11,17 @@
 
 #include "stockfish.hpp"
 
+using namespace std;
 static void updateScoreFromUciLine(const char* line, int& cp, int& mateIn, bool& haveCp, bool& haveMate) {
   const char* cpPos = strstr(line, "score cp ");
   if (cpPos) {
-    cp = std::atoi(cpPos + 9);
+    cp = atoi(cpPos + 9);
     haveCp = true;
     haveMate = false;
   }
   const char* mPos = strstr(line, "score mate ");
   if (mPos) {
-    mateIn = std::atoi(mPos + 11);
+    mateIn = atoi(mPos + 11);
     haveMate = true;
   }
 }
@@ -32,8 +33,8 @@ static void updateScoreFromUciLine(const char* line, int& cp, int& mateIn, bool&
 #include <unistd.h>
 #endif
 
-static std::string urlEncodeFen(const std::string& fen) {
-  std::string out;
+static string urlEncodeFen(const string& fen) {
+  string out;
   for (char c : fen) {
     if (c == ' ') out += "%20";
     else out += c;
@@ -41,20 +42,20 @@ static std::string urlEncodeFen(const std::string& fen) {
   return out;
 }
 
-static std::string getBestMoveFromLichess(const std::string& fen) {
-  std::string encoded = urlEncodeFen(fen);
+static string getBestMoveFromLichess(const string& fen) {
+  string encoded = urlEncodeFen(fen);
 #ifdef _WIN32
-  std::string cmd =
+  string cmd =
       "curl.exe -s -m 5 \"https://lichess.org/api/cloud-eval?fen=" + encoded + "\" 2>nul";
   FILE* f = _popen(cmd.c_str(), "r");
 #else
-  std::string cmd =
+  string cmd =
       "curl -s -m 5 \"https://lichess.org/api/cloud-eval?fen=" + encoded + "\" 2>/dev/null";
   FILE* f = popen(cmd.c_str(), "r");
 #endif
   if (!f) return "";
   char buf[4096];
-  std::string json;
+  string json;
   while (fgets(buf, sizeof(buf), f)) json += buf;
 #ifdef _WIN32
   _pclose(f);
@@ -62,30 +63,30 @@ static std::string getBestMoveFromLichess(const std::string& fen) {
   pclose(f);
 #endif
   size_t pv = json.find("\"moves\":\"");
-  if (pv == std::string::npos) return "";
+  if (pv == string::npos) return "";
   pv += 9;
   size_t end = json.find("\"", pv);
-  if (end == std::string::npos) return "";
-  std::string moves = json.substr(pv, end - pv);
+  if (end == string::npos) return "";
+  string moves = json.substr(pv, end - pv);
   size_t space = moves.find(' ');
-  if (space != std::string::npos) moves = moves.substr(0, space);
+  if (space != string::npos) moves = moves.substr(0, space);
   return moves;
 }
 
-bool lichessCloudEvalPosition(const std::string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
-  std::string encoded = urlEncodeFen(fen);
+bool lichessCloudEvalPosition(const string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
+  string encoded = urlEncodeFen(fen);
 #ifdef _WIN32
-  std::string cmd =
+  string cmd =
       "curl.exe -s -m 8 \"https://lichess.org/api/cloud-eval?fen=" + encoded + "\" 2>nul";
   FILE* f = _popen(cmd.c_str(), "r");
 #else
-  std::string cmd =
+  string cmd =
       "curl -s -m 8 \"https://lichess.org/api/cloud-eval?fen=" + encoded + "\" 2>/dev/null";
   FILE* f = popen(cmd.c_str(), "r");
 #endif
   if (!f) return false;
   char buf[8192];
-  std::string json;
+  string json;
   while (fgets(buf, sizeof(buf), f)) json += buf;
 #ifdef _WIN32
   _pclose(f);
@@ -93,17 +94,17 @@ bool lichessCloudEvalPosition(const std::string& fen, int& cpOut, bool& mateOut,
   pclose(f);
 #endif
   size_t pvs = json.find("\"pvs\"");
-  if (pvs == std::string::npos) return false;
-  std::string tail = json.substr(pvs);
+  if (pvs == string::npos) return false;
+  string tail = json.substr(pvs);
   size_t mateK = tail.find("\"mate\":");
-  if (mateK != std::string::npos && mateK < 2048) {
-    mateInOut = std::atoi(tail.c_str() + mateK + 7);
+  if (mateK != string::npos && mateK < 2048) {
+    mateInOut = atoi(tail.c_str() + mateK + 7);
     mateOut = true;
     return true;
   }
   size_t cpK = tail.find("\"cp\":");
-  if (cpK != std::string::npos && cpK < 2048) {
-    cpOut = std::atoi(tail.c_str() + cpK + 5);
+  if (cpK != string::npos && cpK < 2048) {
+    cpOut = atoi(tail.c_str() + cpK + 5);
     mateOut = false;
     return true;
   }
@@ -117,10 +118,10 @@ static bool fileExists(const char* p) {
   return a != INVALID_FILE_ATTRIBUTES && (a & FILE_ATTRIBUTE_DIRECTORY) == 0;
 }
 
-static std::string findStockfish() {
+static string findStockfish() {
   char buf[MAX_PATH];
-  if (SearchPathA(nullptr, "stockfish.exe", nullptr, sizeof(buf), buf, nullptr) > 0) return std::string(buf);
-  if (SearchPathA(nullptr, "stockfish", ".exe", sizeof(buf), buf, nullptr) > 0) return std::string(buf);
+  if (SearchPathA(nullptr, "stockfish.exe", nullptr, sizeof(buf), buf, nullptr) > 0) return string(buf);
+  if (SearchPathA(nullptr, "stockfish", ".exe", sizeof(buf), buf, nullptr) > 0) return string(buf);
   const char* fixed[] = {
       "third_party\\stockfish\\stockfish.exe",
       "third_party/stockfish/stockfish.exe",
@@ -143,7 +144,7 @@ static bool writeAll(HANDLE h, const char* data, size_t n) {
   return true;
 }
 
-static bool readLine(HANDLE h, std::string& line) {
+static bool readLine(HANDLE h, string& line) {
   line.clear();
   char c;
   DWORD r = 0;
@@ -155,7 +156,7 @@ static bool readLine(HANDLE h, std::string& line) {
   return true;
 }
 
-static std::string runStockfishUci(const std::string& exe, const std::string& fen) {
+static string runStockfishUci(const string& exe, const string& fen) {
   SECURITY_ATTRIBUTES sa{};
   sa.nLength = sizeof(sa);
   sa.bInheritHandle = TRUE;
@@ -190,7 +191,7 @@ static std::string runStockfishUci(const std::string& exe, const std::string& fe
   }
 
   auto send = [&](const char* s) { return writeAll(inWr, s, strlen(s)); };
-  std::string line;
+  string line;
   if (!send("uci\n")) {
     TerminateProcess(pi.hProcess, 1);
     CloseHandle(pi.hProcess);
@@ -200,7 +201,7 @@ static std::string runStockfishUci(const std::string& exe, const std::string& fe
     return "";
   }
   while (readLine(outRd, line)) {
-    if (line.find("uciok") != std::string::npos) break;
+    if (line.find("uciok") != string::npos) break;
     if (line.size() > 10000) break;
   }
   if (!send("isready\n")) {
@@ -212,7 +213,7 @@ static std::string runStockfishUci(const std::string& exe, const std::string& fe
     return "";
   }
   while (readLine(outRd, line)) {
-    if (line.find("readyok") != std::string::npos) break;
+    if (line.find("readyok") != string::npos) break;
     if (line.size() > 10000) break;
   }
 
@@ -224,7 +225,7 @@ static std::string runStockfishUci(const std::string& exe, const std::string& fe
     CloseHandle(inWr);
     return "";
   }
-  std::string pos = "position fen " + fen + "\n";
+  string pos = "position fen " + fen + "\n";
   if (!send(pos.c_str()) || !send("go depth 18\n")) {
     TerminateProcess(pi.hProcess, 1);
     CloseHandle(pi.hProcess);
@@ -234,14 +235,14 @@ static std::string runStockfishUci(const std::string& exe, const std::string& fe
     return "";
   }
 
-  std::string bestMove;
+  string bestMove;
   int lineCount = 0;
   const int maxLines = 50000;
   while (readLine(outRd, line) && ++lineCount < maxLines) {
     if (line.size() >= 9 && line.compare(0, 9, "bestmove ") == 0) {
-      std::string rest = line.substr(9);
+      string rest = line.substr(9);
       size_t sp = rest.find(' ');
-      if (sp != std::string::npos) rest = rest.substr(0, sp);
+      if (sp != string::npos) rest = rest.substr(0, sp);
       if (rest != "(none)") bestMove = rest;
       break;
     }
@@ -256,7 +257,7 @@ static std::string runStockfishUci(const std::string& exe, const std::string& fe
   return bestMove;
 }
 
-static bool runStockfishEvalWin(const std::string& exe, const std::string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
+static bool runStockfishEvalWin(const string& exe, const string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
   SECURITY_ATTRIBUTES sa{};
   sa.nLength = sizeof(sa);
   sa.bInheritHandle = TRUE;
@@ -291,7 +292,7 @@ static bool runStockfishEvalWin(const std::string& exe, const std::string& fen, 
   }
 
   auto send = [&](const char* s) { return writeAll(inWr, s, strlen(s)); };
-  std::string line;
+  string line;
   if (!send("uci\n")) {
     TerminateProcess(pi.hProcess, 1);
     CloseHandle(pi.hProcess);
@@ -301,7 +302,7 @@ static bool runStockfishEvalWin(const std::string& exe, const std::string& fen, 
     return false;
   }
   while (readLine(outRd, line)) {
-    if (line.find("uciok") != std::string::npos) break;
+    if (line.find("uciok") != string::npos) break;
     if (line.size() > 10000) break;
   }
   if (!send("isready\n")) {
@@ -313,7 +314,7 @@ static bool runStockfishEvalWin(const std::string& exe, const std::string& fen, 
     return false;
   }
   while (readLine(outRd, line)) {
-    if (line.find("readyok") != std::string::npos) break;
+    if (line.find("readyok") != string::npos) break;
     if (line.size() > 10000) break;
   }
 
@@ -325,7 +326,7 @@ static bool runStockfishEvalWin(const std::string& exe, const std::string& fen, 
     CloseHandle(inWr);
     return false;
   }
-  std::string pos = "position fen " + fen + "\n";
+  string pos = "position fen " + fen + "\n";
   if (!send(pos.c_str()) || !send("go depth 14\n")) {
     TerminateProcess(pi.hProcess, 1);
     CloseHandle(pi.hProcess);
@@ -358,23 +359,23 @@ static bool runStockfishEvalWin(const std::string& exe, const std::string& fen, 
   return true;
 }
 
-bool stockfishEvalPosition(const std::string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
-  std::string exe = findStockfish();
+bool stockfishEvalPosition(const string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
+  string exe = findStockfish();
   if (exe.empty()) return false;
   return runStockfishEvalWin(exe, fen, cpOut, mateOut, mateInOut);
 }
 
-std::string getBestMoveFromStockfish(const std::string& fen, int) {
-  std::string exe = findStockfish();
+string getBestMoveFromStockfish(const string& fen, int) {
+  string exe = findStockfish();
   if (exe.empty()) return getBestMoveFromLichess(fen);
-  std::string uci = runStockfishUci(exe, fen);
+  string uci = runStockfishUci(exe, fen);
   if (uci.empty()) return getBestMoveFromLichess(fen);
   return uci;
 }
 
 #else
 
-static std::string findStockfish() {
+static string findStockfish() {
   const char* paths[] = {"third_party/stockfish/stockfish", "./third_party/stockfish/stockfish", "stockfish",
                            "/opt/homebrew/bin/stockfish", "/usr/local/bin/stockfish"};
   for (const char* p : paths) {
@@ -383,8 +384,8 @@ static std::string findStockfish() {
   return "";
 }
 
-bool stockfishEvalPosition(const std::string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
-  std::string exe = findStockfish();
+bool stockfishEvalPosition(const string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
+  string exe = findStockfish();
   if (exe.empty()) return false;
 
   int toEngine[2], fromEngine[2];
@@ -449,8 +450,8 @@ bool stockfishEvalPosition(const std::string& fen, int& cpOut, bool& mateOut, in
   return true;
 }
 
-std::string getBestMoveFromStockfish(const std::string& fen, int /* movetimeMs */) {
-  std::string exe = findStockfish();
+string getBestMoveFromStockfish(const string& fen, int /* movetimeMs */) {
+  string exe = findStockfish();
   if (exe.empty()) return getBestMoveFromLichess(fen);
 
   int toEngine[2], fromEngine[2];
@@ -494,7 +495,7 @@ std::string getBestMoveFromStockfish(const std::string& fen, int /* movetimeMs *
   fprintf(in, "go depth 18\n");
   fflush(in);
 
-  std::string bestMove;
+  string bestMove;
   int lineCount = 0;
   const int maxLines = 50000;
   while (fgets(line, sizeof(line), out) && ++lineCount < maxLines) {

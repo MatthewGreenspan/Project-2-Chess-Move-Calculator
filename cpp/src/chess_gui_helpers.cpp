@@ -1,14 +1,15 @@
 #include "chess_gui_helpers.hpp"
 #include "gui_constants.hpp"
 
+using namespace std;
 namespace chess_gui {
 
-void boardToArray(const Board& board, std::array<Piece, 64>& out) {
+void boardToArray(const Board& board, array<Piece, 64>& out) {
   for (int i = 0; i < 64; i++) out[i] = board.at<Piece>(Square(i));
 }
 
-std::string boardToFen(const std::array<Piece, 64>& pieces, Color toMove) {
-  std::string fen;
+string boardToFen(const array<Piece, 64>& pieces, Color toMove) {
+  string fen;
   for (int r = 7; r >= 0; r--) {
     int empty = 0;
     for (int f = 0; f < 8; f++) {
@@ -17,13 +18,13 @@ std::string boardToFen(const std::array<Piece, 64>& pieces, Color toMove) {
         empty++;
       else {
         if (empty > 0) {
-          fen += std::to_string(empty);
+          fen += to_string(empty);
           empty = 0;
         }
-        fen += static_cast<std::string>(p);
+        fen += static_cast<string>(p);
       }
     }
-    if (empty > 0) fen += std::to_string(empty);
+    if (empty > 0) fen += to_string(empty);
     if (r > 0) fen += '/';
   }
   fen += toMove == Color::WHITE ? " w" : " b";
@@ -31,10 +32,10 @@ std::string boardToFen(const std::array<Piece, 64>& pieces, Color toMove) {
   return fen;
 }
 
-std::string moveToPlainEnglish(const Board& board, const Move& move) {
+string moveToPlainEnglish(const Board& board, const Move& move) {
   if (move == Move::NO_MOVE) return "";
   PieceType pt = board.at<PieceType>(move.from());
-  std::string toSq = static_cast<std::string>(move.to());
+  string toSq = static_cast<string>(move.to());
   bool capture = board.isCapture(move);
 
   if (move.typeOf() == Move::CASTLING) {
@@ -44,11 +45,11 @@ std::string moveToPlainEnglish(const Board& board, const Move& move) {
     return "Pawn captures en passant on " + toSq;
   }
   if (move.typeOf() == Move::PROMOTION) {
-    std::string promo = PIECE_NAMES_CAP[static_cast<int>(move.promotionType())];
+    string promo = PIECE_NAMES_CAP[static_cast<int>(move.promotionType())];
     return "Pawn promotes to " + promo + " on " + toSq;
   }
 
-  std::string piece = PIECE_NAMES_CAP[static_cast<int>(pt)];
+  string piece = PIECE_NAMES_CAP[static_cast<int>(pt)];
   if (capture)
     return piece + " captures on " + toSq;
   return piece + " to " + toSq;
@@ -65,9 +66,9 @@ Board getBoardForPieceMoves(const Board& board, int squareIndex) {
   if (p == Piece::NONE) return board;
   if (p.color() == board.sideToMove()) return board;
   Board b = board;
-  std::string fen = board.getFen();
+  string fen = board.getFen();
   size_t pos = fen.find(' ');
-  if (pos != std::string::npos && pos + 2 <= fen.size())
+  if (pos != string::npos && pos + 2 <= fen.size())
     fen[pos + 1] = (fen[pos + 1] == 'w') ? 'b' : 'w';
   b.setFen(fen);
   return b;

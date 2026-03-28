@@ -3,5 +3,7 @@
 #include "app.hpp"
 #include <string>
 
-std::string findAssetPath();
+using namespace std;
+
+string findAssetPath();
 bool loadAssets(App& app);

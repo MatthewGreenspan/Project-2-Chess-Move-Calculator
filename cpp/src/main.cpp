@@ -15,6 +15,7 @@
 #include <SDL2/SDL_ttf.h>
 #endif
 
+using namespace std;
 using namespace chess;
 using namespace chess_gui;
 
@@ -97,10 +98,10 @@ int main(int argc, char* argv[]) {
         int sideBtn = getSidebarButtonAt(e.button.x, e.button.y);
         /* Buttons 1/2 (left Black, right White): set active color in FEN and flip board so that side is bottom. */
         if (sideBtn == 1) {
-          std::string fen = app.board.getFen();
+          string fen = app.board.getFen();
           size_t pos = fen.find(' ');
           /* FEN: ... board ... | <active color> | castling | ep | halfmove | fullmove — replace token after first space. */
-          if (pos != std::string::npos) fen = fen.substr(0, pos) + " b" + fen.substr(pos + 2);
+          if (pos != string::npos) fen = fen.substr(0, pos) + " b" + fen.substr(pos + 2);
           app.board.setFen(fen);
           app.boardFlipped = true;
           boardToArray(app.board, app.pieces);
@@ -108,9 +109,9 @@ int main(int argc, char* argv[]) {
           updateLegalMoves(app);
           clearBestMoveDisplay(app);
         } else if (sideBtn == 2) {
-          std::string fen = app.board.getFen();
+          string fen = app.board.getFen();
           size_t pos = fen.find(' ');
-          if (pos != std::string::npos) fen = fen.substr(0, pos) + " w" + fen.substr(pos + 2);
+          if (pos != string::npos) fen = fen.substr(0, pos) + " w" + fen.substr(pos + 2);
           app.board.setFen(fen);
           app.boardFlipped = false;
           boardToArray(app.board, app.pieces);

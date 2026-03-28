@@ -6,21 +6,23 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-std::string findAssetPath() {
+using namespace std;
+
+string findAssetPath() {
   char* base = SDL_GetBasePath();
   if (base) {
-    std::string p(base);
+    string p(base);
     SDL_free(base);
-    std::string tries[] = {p + "assets/", p + "../assets/", "./assets/", "assets/"};
+    string tries[] = {p + "assets/", p + "../assets/", "./assets/", "assets/"};
     for (const auto& t : tries) {
-      std::string f = t + "white/king.png";
+      string f = t + "white/king.png";
       if (SDL_RWFromFile(f.c_str(), "r")) return t;
     }
   }
   return "assets/";
 }
 
-static SDL_Texture* loadTexture(SDL_Renderer* r, const std::string& path) {
+static SDL_Texture* loadTexture(SDL_Renderer* r, const string& path) {
   int w, h, n;
   unsigned char* data = stbi_load(path.c_str(), &w, &h, &n, 4);
   if (data) {
@@ -45,7 +47,7 @@ bool loadAssets(App& app) {
   const char* colors[] = {"white", "black"};
   for (int c = 0; c < 2; c++)
     for (int p = 0; p < 6; p++) {
-      std::string path = app.assetPath + colors[c] + "/" + PIECE_NAMES[p] + ".png";
+      string path = app.assetPath + colors[c] + "/" + PIECE_NAMES[p] + ".png";
       app.pieceTex[c][p] = loadTexture(app.renderer, path);
       if (!app.pieceTex[c][p]) return false;
     }

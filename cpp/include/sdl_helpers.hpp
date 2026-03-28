@@ -2,6 +2,7 @@
 
 #include <SDL2/SDL.h>
 
+using namespace std;
 /** Call before SDL_Init — DPI, HiDPI, render quality. */
 void sdlApplyHintsBeforeInit();
 

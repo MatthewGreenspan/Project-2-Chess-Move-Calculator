@@ -1,6 +1,7 @@
 #include "gui_input.hpp"
 #include "gui_constants.hpp"
 
+using namespace std;
 int getSquareAt(const App& app, int pixelX, int pixelY) {
   int py = pixelY - PADDING - PALETTE_HEIGHT - PADDING;
   if (py < 0 || py >= BOARD_SIZE) return -1;

@@ -2,13 +2,14 @@
 #include "best_move.hpp"
 #include "chess_gui_helpers.hpp"
 
+using namespace std;
 void doDrop(App& app, int toSquare) {
   if (app.dragFrom >= 0 && app.dragFrom < 64) {
     Piece p = app.pieces[app.dragFrom];
     if (p != Piece::NONE && toSquare >= 0 && toSquare < 64) {
       app.pieces[app.dragFrom] = Piece::NONE;
       app.pieces[toSquare] = p;
-      std::string fen = chess_gui::boardToFen(app.pieces, app.board.sideToMove());
+      string fen = chess_gui::boardToFen(app.pieces, app.board.sideToMove());
       app.board.setFen(fen);
       app.selectedSquare = -1;
       app.legalMoveSquares.clear();
@@ -21,7 +22,7 @@ void doDrop(App& app, int toSquare) {
     PieceType pt = PT_MAP[app.dragFromPalette % 6];
     Piece p(pt, color == 0 ? Color::WHITE : Color::BLACK);
     app.pieces[toSquare] = p;
-    std::string fen = chess_gui::boardToFen(app.pieces, app.board.sideToMove());
+    string fen = chess_gui::boardToFen(app.pieces, app.board.sideToMove());
     if (app.board.setFen(fen)) app.selectedSquare = -1;
     app.dragFromPalette = -1;
   }
@@ -33,7 +34,7 @@ void doDrop(App& app, int toSquare) {
 void doRemove(App& app) {
   if (app.dragFrom >= 0 && app.dragFrom < 64) {
     app.pieces[app.dragFrom] = Piece::NONE;
-    std::string fen = chess_gui::boardToFen(app.pieces, app.board.sideToMove());
+    string fen = chess_gui::boardToFen(app.pieces, app.board.sideToMove());
     app.board.setFen(fen);
     app.dragFrom = -1;
     app.selectedSquare = -1;

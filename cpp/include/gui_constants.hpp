@@ -9,6 +9,7 @@
 #define HAVE_TTF 0
 #endif
 
+using namespace std;
 inline constexpr int SQUARE_SIZE = 72;
 inline constexpr int BOARD_SIZE = 8 * SQUARE_SIZE;
 inline constexpr int PALETTE_HEIGHT = 56;

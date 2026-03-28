@@ -2,11 +2,12 @@
 
 #include "app.hpp"
 
+using namespace std;
 namespace chess_gui {
 
-void boardToArray(const Board& board, std::array<Piece, 64>& out);
-std::string boardToFen(const std::array<Piece, 64>& pieces, Color toMove);
-std::string moveToPlainEnglish(const Board& board, const Move& move);
+void boardToArray(const Board& board, array<Piece, 64>& out);
+string boardToFen(const array<Piece, 64>& pieces, Color toMove);
+string moveToPlainEnglish(const Board& board, const Move& move);
 
 bool hasValidKingCount(const Board& board);
 Board getBoardForPieceMoves(const Board& board, int squareIndex);

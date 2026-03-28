@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+using namespace std;
 using namespace chess;
 using namespace chess_gui;
 
@@ -22,22 +23,22 @@ constexpr double kScanTimeLimitMs = 5000.0;
 constexpr double kScanConfidence = 0.90;
 constexpr int kScanMinGames = 5;
 
-static std::string formatEvalGradeLabel(int cp, bool mate, int mateIn, const char* src) {
+static string formatEvalGradeLabel(int cp, bool mate, int mateIn, const char* src) {
   if (mate) {
     if (mateIn > 0)
-      return std::string(src) + ": they mate in " + std::to_string(mateIn) + " (bad for last move)";
-    return std::string(src) + ": you mate in " + std::to_string(-mateIn) + " (good for last move)";
+      return string(src) + ": they mate in " + to_string(mateIn) + " (bad for last move)";
+    return string(src) + ": you mate in " + to_string(-mateIn) + " (good for last move)";
   }
   int moverCp = -cp;
   char buf[144];
-  std::snprintf(buf, sizeof(buf), "%s: %+0.2f pawns (last mover ~cp %d)", src, moverCp / 100.0, moverCp);
-  return std::string(buf);
+  snprintf(buf, sizeof(buf), "%s: %+0.2f pawns (last mover ~cp %d)", src, moverCp / 100.0, moverCp);
+  return string(buf);
 }
 
-static std::string formatMoveGrade(const Board& rootBoard, Move m) {
+static string formatMoveGrade(const Board& rootBoard, Move m) {
   Board b = rootBoard;
   b.makeMove(m);
-  std::string fenAfter = b.getFen();
+  string fenAfter = b.getFen();
   int cp = 0;
   bool mate = false;
   int mateIn = 0;
@@ -52,7 +53,7 @@ static std::string formatMoveGrade(const Board& rootBoard, Move m) {
 static int scorePercentForMove(const Board& rootBoard, Move m) {
   Board b = rootBoard;
   b.makeMove(m);
-  std::string fenAfter = b.getFen();
+  string fenAfter = b.getFen();
   int cp = 0;
   bool mate = false;
   int mateIn = 0;
@@ -71,9 +72,9 @@ static int scorePercentForMove(const Board& rootBoard, Move m) {
 }
 
 static Move findFirstLegalFromRanked(const Board& board, const Movelist& moves,
-                                     const std::vector<std::pair<std::string, int>>& ranked, bool inOpening) {
+                                     const vector<pair<string, int>>& ranked, bool inOpening) {
   for (const auto& entry : ranked) {
-    const std::string& san = entry.first;
+    const string& san = entry.first;
     if (san.empty()) continue;
     if (inOpening && sanIsNonCastlingKingMove(san)) continue;
     for (size_t i = 0; i < moves.size(); i++) {
@@ -114,7 +115,7 @@ void clearBestMoveDisplay(App& app) {
 }
 
 void updateBestMove(App& app, bool force) {
-  std::string fen = app.board.getFen();
+  string fen = app.board.getFen();
   if (!force && fen == app.lastAnalyzedFen) return;
   app.lastAnalyzedFen = fen;
   app.bestMoveUci = "";
@@ -150,7 +151,7 @@ void updateBestMove(App& app, bool force) {
 
   bool hasPositionDbMove = false;
   {
-    std::string bookMove = lookupPositionDBMove(fen);
+    string bookMove = lookupPositionDBMove(fen);
     if (!bookMove.empty()) {
       for (size_t i = 0; i < moves.size(); i++) {
         if (uci::moveToSan(app.board, moves[i]) == bookMove) {
@@ -166,21 +167,21 @@ void updateBestMove(App& app, bool force) {
   }
 
   if (static_cast<int>(app.movesPlayed.size()) < kMaxOpeningTriePlies) {
-    using clock = std::chrono::high_resolution_clock;
+    using clock = chrono::high_resolution_clock;
     auto t0 = clock::now();
-    auto rankedTrie = g_trie.getRankedMoves(app.movesPlayed, 16);
+    vector<pair<string, int>> rankedTrie = g_trie.getRankedMoves(app.movesPlayed, 16);
     auto t1 = clock::now();
     auto t2 = clock::now();
-    auto rankedHash = g_openingHash.getRankedMoves(app.movesPlayed, 16);
+    vector<pair<string, int>> rankedHash = g_openingHash.getRankedMoves(app.movesPlayed, 16);
     auto t3 = clock::now();
-    long long nsTrie = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
-    long long nsHash = std::chrono::duration_cast<std::chrono::nanoseconds>(t3 - t2).count();
+    long long nsTrie = chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
+    long long nsHash = chrono::duration_cast<chrono::nanoseconds>(t3 - t2).count();
     double msTrie = nsTrie / 1e6;
     double msHash = nsHash / 1e6;
     char timingBuf[128];
-    std::snprintf(timingBuf, sizeof(timingBuf), "Trie time: %.3f ms (%lld ns)", msTrie, (long long)nsTrie);
+    snprintf(timingBuf, sizeof(timingBuf), "Trie time: %.3f ms (%lld ns)", msTrie, (long long)nsTrie);
     app.trieTimingLine = timingBuf;
-    std::snprintf(timingBuf, sizeof(timingBuf), "Hash time: %.3f ms (%lld ns)", msHash, (long long)nsHash);
+    snprintf(timingBuf, sizeof(timingBuf), "Hash time: %.3f ms (%lld ns)", msHash, (long long)nsHash);
     app.hashTimingLine = timingBuf;
 
 
@@ -188,7 +189,7 @@ void updateBestMove(App& app, bool force) {
     for (const auto& entry : rankedTrie) triePrefixGames += entry.second;
     int hashPrefixGames = 0;
     for (const auto& entry : rankedHash) hashPrefixGames += entry.second;
-    std::snprintf(timingBuf, sizeof(timingBuf), "Prefix games: %d", std::max(triePrefixGames, hashPrefixGames));
+    snprintf(timingBuf, sizeof(timingBuf), "Prefix games: %d", max(triePrefixGames, hashPrefixGames));
     app.prefixGamesLine = timingBuf;
     
     const bool inOpening = static_cast<int>(app.movesPlayed.size()) < kOpeningPliesSkipKingWalk;
@@ -196,37 +197,37 @@ void updateBestMove(App& app, bool force) {
     Move mt1 = findFirstLegalFromRanked(app.board, moves, rankedTrie, inOpening);
     Move mt2 = Move::NO_MOVE;
     if (rankedTrie.size() >= 2) {
-      std::vector<std::pair<std::string, int>> sub(rankedTrie.begin() + 1, rankedTrie.end());
+      vector<pair<string, int>> sub(rankedTrie.begin() + 1, rankedTrie.end());
       mt2 = findFirstLegalFromRanked(app.board, moves, sub, inOpening);
     }
 
     Move mh1 = findFirstLegalFromRanked(app.board, moves, rankedHash, inOpening);
     Move mh2 = Move::NO_MOVE;
     if (rankedHash.size() >= 2) {
-      std::vector<std::pair<std::string, int>> sub(rankedHash.begin() + 1, rankedHash.end());
+      vector<pair<string, int>> sub(rankedHash.begin() + 1, rankedHash.end());
       mh2 = findFirstLegalFromRanked(app.board, moves, sub, inOpening);
     }
 
-    auto buildTwoLines = [&](const char* label, Move m1, Move m2, std::string& line1, std::string& line2) {
+    auto buildTwoLines = [&](const char* label, Move m1, Move m2, string& line1, string& line2) {
       char buf[320];
       if (m1 == Move::NO_MOVE) {
-        std::snprintf(buf, sizeof(buf), "%s #1: no legal book move", label);
+        snprintf(buf, sizeof(buf), "%s #1: no legal book move", label);
         line1 = buf;
         line2.clear();
         return;
       }
       int s1 = scorePercentForMove(app.board, m1);
       if (s1 < 0)
-        std::snprintf(buf, sizeof(buf), "%s #1: %s", label, uci::moveToSan(app.board, m1).c_str());
+        snprintf(buf, sizeof(buf), "%s #1: %s", label, uci::moveToSan(app.board, m1).c_str());
       else
-        std::snprintf(buf, sizeof(buf), "%s #1: %s score %d/100", label, uci::moveToSan(app.board, m1).c_str(), s1);
+        snprintf(buf, sizeof(buf), "%s #1: %s score %d/100", label, uci::moveToSan(app.board, m1).c_str(), s1);
       line1 = buf;
       if (m2 != Move::NO_MOVE && m2 != m1) {
         int s2 = scorePercentForMove(app.board, m2);
         if (s2 < 0)
-          std::snprintf(buf, sizeof(buf), "%s #2: %s", label, uci::moveToSan(app.board, m2).c_str());
+          snprintf(buf, sizeof(buf), "%s #2: %s", label, uci::moveToSan(app.board, m2).c_str());
         else
-          std::snprintf(buf, sizeof(buf), "%s #2: %s score %d/100", label, uci::moveToSan(app.board, m2).c_str(), s2);
+          snprintf(buf, sizeof(buf), "%s #2: %s score %d/100", label, uci::moveToSan(app.board, m2).c_str(), s2);
         line2 = buf;
       } else {
         line2.clear();
@@ -252,7 +253,7 @@ void updateBestMove(App& app, bool force) {
     } else {
       char sbuf[280];
       const char* why = scan.stoppedByConfidence ? "90% confidence" : (scan.stoppedByTime ? "time limit" : "EOF");
-      std::snprintf(sbuf, sizeof(sbuf), "PGN scan: %.0f ms, %d games w/ next move / %d seen — %s", scan.elapsedMs,
+      snprintf(sbuf, sizeof(sbuf), "PGN scan: %.0f ms, %d games w/ next move / %d seen — %s", scan.elapsedMs,
                     scan.gamesWithNextMove, scan.gamesVisited, why);
       app.openingScanLine = sbuf;
     }
@@ -261,7 +262,7 @@ void updateBestMove(App& app, bool force) {
     Move mScan2 = Move::NO_MOVE;
     if (!scan.rankedNext.empty()) mScan1 = findFirstLegalFromRanked(app.board, moves, scan.rankedNext, inOpening);
     if (scan.rankedNext.size() >= 2) {
-      std::vector<std::pair<std::string, int>> sub(scan.rankedNext.begin() + 1, scan.rankedNext.end());
+      vector<pair<string, int>> sub(scan.rankedNext.begin() + 1, scan.rankedNext.end());
       mScan2 = findFirstLegalFromRanked(app.board, moves, sub, inOpening);
     }
 
@@ -301,7 +302,7 @@ void updateBestMove(App& app, bool force) {
 
   if (hasPositionDbMove) return;
 
-  std::string uci = getBestMoveFromStockfish(fen, 400);
+  string uci = getBestMoveFromStockfish(fen, 400);
   Move m = Move::NO_MOVE;
   if (!uci.empty()) m = uci::uciToMove(app.board, uci);
   if (m == Move::NO_MOVE) m = moves[0];

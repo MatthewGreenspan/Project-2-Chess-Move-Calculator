@@ -3,14 +3,15 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace std;
 void sdlApplyHintsBeforeInit() {
 #ifdef SDL_HINT_WINDOWS_DPI_AWARENESS
   SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
 #endif
   /* Partner workaround: 1:1 framebuffer if Retina / fractional scaling still looks wrong:
    *   CHESS_CALC_DISABLE_HIGHDPI=1 ./chess-calc   (Windows: set CHESS_CALC_DISABLE_HIGHDPI=1) */
-  const char* noHi = std::getenv("CHESS_CALC_DISABLE_HIGHDPI");
-  if (noHi && std::strcmp(noHi, "1") == 0)
+  const char* noHi = getenv("CHESS_CALC_DISABLE_HIGHDPI");
+  if (noHi && strcmp(noHi, "1") == 0)
     SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "1");
   else
     SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");

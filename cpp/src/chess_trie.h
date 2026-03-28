@@ -5,25 +5,26 @@
 #include <utility>
 #include <vector>
 
+using namespace std;
 struct TrieNode {
-  std::string move;
+  string move;
   int count = 0;
-  std::vector<std::pair<std::string, TrieNode*>> children;
+  vector<pair<string, TrieNode*>> children;
 
-  explicit TrieNode(std::string m = "") : move(std::move(m)) {}
+  explicit TrieNode(string m = "") : move(static_cast<string&&>(m)) {}
 };
 
 class ChessTrie {
   TrieNode* root;
 
-  static TrieNode* findChild(TrieNode* node, const std::string& m) {
+  static TrieNode* findChild(TrieNode* node, const string& m) {
     if (!node) return nullptr;
     for (auto& p : node->children)
       if (p.first == m) return p.second;
     return nullptr;
   }
 
-  static TrieNode* getOrCreateChild(TrieNode* node, const std::string& m) {
+  static TrieNode* getOrCreateChild(TrieNode* node, const string& m) {
     if (TrieNode* c = findChild(node, m)) return c;
     TrieNode* n = new TrieNode(m);
     node->children.push_back({m, n});
@@ -38,15 +39,15 @@ class ChessTrie {
 
   void pruneNode(TrieNode* node, int minCount) {
     if (!node) return;
-    std::vector<std::string> toDelete;
+    vector<string> toDelete;
     for (const auto& p : node->children) {
       if (p.second->count < minCount) toDelete.push_back(p.first);
     }
-    for (const std::string& move : toDelete) {
-      for (std::size_t i = 0; i < node->children.size(); ++i) {
-        if (node->children[i].first == move) {
+    for (const string& moveText : toDelete) {
+      for (size_t i = 0; i < node->children.size(); ++i) {
+        if (node->children[i].first == moveText) {
           deleteNode(node->children[i].second);
-          node->children[i] = std::move(node->children.back());
+          node->children[i] = static_cast<pair<string, TrieNode*>&&>(node->children.back());
           node->children.pop_back();
           break;
         }
@@ -60,28 +61,28 @@ class ChessTrie {
 
   ~ChessTrie() { deleteNode(root); }
 
-  void insertGame(const std::vector<std::string>& moves) {
+  void insertGame(const vector<string>& moves) {
     TrieNode* curr = root;
-    for (const std::string& move : moves) {
+    for (const string& move : moves) {
       curr = getOrCreateChild(curr, move);
       curr->count++;
     }
   }
 
   /** Current node after following played moves, or nullptr if prefix missing. */
-  TrieNode* nodeAfterPrefix(const std::vector<std::string>& playedMoves) const {
+  TrieNode* nodeAfterPrefix(const vector<string>& playedMoves) const {
     TrieNode* curr = root;
-    for (const std::string& move : playedMoves) {
+    for (const string& move : playedMoves) {
       curr = findChild(curr, move);
       if (!curr) return nullptr;
     }
     return curr;
   }
 
-  std::string getBestMove(const std::vector<std::string>& playedMoves) {
+  string getBestMove(const vector<string>& playedMoves) {
     TrieNode* curr = nodeAfterPrefix(playedMoves);
     if (!curr) return "";
-    std::string bestMove;
+    string bestMove;
     int maxCount = 0;
     for (const auto& p : curr->children) {
       if (p.second->count > maxCount) {
@@ -92,16 +93,16 @@ class ChessTrie {
     return bestMove;
   }
 
-  std::vector<std::pair<std::string, int>> getRankedMoves(const std::vector<std::string>& playedMoves, int maxMoves) {
+  vector<pair<string, int>> getRankedMoves(const vector<string>& playedMoves, int maxMoves) {
     TrieNode* curr = nodeAfterPrefix(playedMoves);
     if (!curr) return {};
-    std::vector<std::pair<std::string, int>> candidates;
+    vector<pair<string, int>> candidates;
     for (const auto& p : curr->children) candidates.push_back({p.first, p.second->count});
-    std::sort(candidates.begin(), candidates.end(),
-              [](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+    sort(candidates.begin(), candidates.end(),
+              [](const pair<string, int>& a, const pair<string, int>& b) {
                 return a.second > b.second;
               });
-    if ((int)candidates.size() > maxMoves) candidates.resize((std::size_t)maxMoves);
+    if ((int)candidates.size() > maxMoves) candidates.resize((size_t)maxMoves);
     return candidates;
   }
 

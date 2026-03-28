@@ -5,6 +5,7 @@
 #include <cmath>
 #include <string>
 
+using namespace std;
 using namespace chess;
 using namespace chess_gui;
 
@@ -14,7 +15,7 @@ static void drawPiece(SDL_Renderer* r, SDL_Texture* tex, int x, int y, int size)
   SDL_RenderCopy(r, tex, nullptr, &dst);
 }
 
-static std::string clampText(const std::string& text, std::size_t maxLen) {
+static string clampText(const string& text, size_t maxLen) {
   if (text.size() <= maxLen) return text;
   if (maxLen <= 3) return text.substr(0, maxLen);
   return text.substr(0, maxLen - 3) + "...";
@@ -37,7 +38,7 @@ static void squareToPixel(const App& app, int boardY, int sqIndex, int& outX, in
 
 static void drawArrowTint(SDL_Renderer* r, int x1, int y1, int x2, int y2, Uint8 br, Uint8 bg, Uint8 bb) {
   float dx = (float)(x2 - x1), dy = (float)(y2 - y1);
-  float len = std::sqrt(dx * dx + dy * dy);
+  float len = sqrt(dx * dx + dy * dy);
   if (len < 4.0f) return;
   dx /= len;
   dy /= len;
@@ -52,7 +53,7 @@ static void drawArrowTint(SDL_Renderer* r, int x1, int y1, int x2, int y2, Uint8
 
   auto drawThickLine = [r](int xa, int ya, int xb, int yb, int w) {
     float dx = (float)(xb - xa), dy = (float)(yb - ya);
-    float l = std::sqrt(dx * dx + dy * dy);
+    float l = sqrt(dx * dx + dy * dy);
     if (l < 0.5f) return;
     dx /= l;
     dy /= l;
@@ -81,8 +82,8 @@ static void drawArrowTint(SDL_Renderer* r, int x1, int y1, int x2, int y2, Uint8
   SDL_RenderDrawLine(r, x2, y2, bx, by);
   SDL_RenderDrawLine(r, ax, ay, bx, by);
 
-  SDL_SetRenderDrawColor(r, (Uint8)(std::min(255, (int)br + 25)), (Uint8)(std::min(255, (int)bg + 25)),
-                         (Uint8)(std::min(255, (int)bb + 25)), 255);
+  SDL_SetRenderDrawColor(r, (Uint8)(min(255, (int)br + 25)), (Uint8)(min(255, (int)bg + 25)),
+                         (Uint8)(min(255, (int)bb + 25)), 255);
   drawThickLine(x1, y1, sx2, sy2, thick - 3);
 }
 
@@ -313,9 +314,9 @@ void render(App& app) {
       int count = 0;
       for (size_t i = 0; i < moves.size() && count < 8; i++) {
         if (moves[i].from() == Square(app.selectedSquare)) {
-          std::string san = uci::moveToSan(displayBoard, moves[i]);
+          string san = uci::moveToSan(displayBoard, moves[i]);
           renderText(app.renderer, app.fontSmall, san.c_str(), sideX + 8, ly, 234, 234, 234);
-          std::string eng = moveToPlainEnglish(displayBoard, moves[i]);
+          string eng = moveToPlainEnglish(displayBoard, moves[i]);
           if (eng.size() > 36) eng = eng.substr(0, 33) + "...";
           renderText(app.renderer, app.fontSmall, eng.c_str(), sideX + 8, ly + 14, 180, 180, 180);
           ly += 32;
