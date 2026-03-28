@@ -56,9 +56,9 @@ void loadOpeningDatabase() {
     }
   });
 
-  g_trie.prune(1);
-  g_openingHash.prune(1);
-  g_positionDB.prune(1);
+  g_trie.prune(3);
+  g_openingHash.prune(3);
+  g_positionDB.prune(2);
 
   g_positionDB.printStats();
   std::cout << "Opening database ready.\n";
