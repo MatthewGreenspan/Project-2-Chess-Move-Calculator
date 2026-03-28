@@ -286,7 +286,7 @@ void render(App& app) {
     }
     ly += 154;
 
-    drawSidebarCard(app.renderer, cardX, ly, cardW, 76);
+        drawSidebarCard(app.renderer, cardX, ly, cardW, 92);
     renderText(app.renderer, app.font, "Timing", cardX + 10, ly + 8, 210, 220, 235);
     cardLy = ly + 34;
     renderText(app.renderer, app.fontSmall,
@@ -296,7 +296,11 @@ void render(App& app) {
     renderText(app.renderer, app.fontSmall,
                clampText(app.hashTimingLine.empty() ? "Hash time: no data" : app.hashTimingLine, 36).c_str(),
                cardX + 10, cardLy, 170, 210, 255);
-    ly += 84;
+    cardLy += 16;
+    renderText(app.renderer, app.fontSmall,
+               clampText(app.prefixGamesLine.empty() ? "Prefix games: no data" : app.prefixGamesLine, 36).c_str(),
+               cardX + 10, cardLy, 200, 200, 200);
+    ly += 100;
 
     renderText(app.renderer, app.font, "Possible moves:", sideX + 8, ly, 160, 160, 160);
     ly += 20;

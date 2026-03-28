@@ -123,6 +123,7 @@ void updateBestMove(App& app, bool force) {
   app.openingLookupCompare.clear();
   app.trieTimingLine.clear();
   app.hashTimingLine.clear();
+  app.prefixGamesLine.clear();
   app.openingTrieLine.clear();
   app.openingTrieSecondLine.clear();
   app.openingHashLine.clear();
@@ -182,6 +183,14 @@ void updateBestMove(App& app, bool force) {
     std::snprintf(timingBuf, sizeof(timingBuf), "Hash time: %.3f ms (%lld ns)", msHash, (long long)nsHash);
     app.hashTimingLine = timingBuf;
 
+
+    int triePrefixGames = 0;
+    for (const auto& entry : rankedTrie) triePrefixGames += entry.second;
+    int hashPrefixGames = 0;
+    for (const auto& entry : rankedHash) hashPrefixGames += entry.second;
+    std::snprintf(timingBuf, sizeof(timingBuf), "Prefix games: %d", std::max(triePrefixGames, hashPrefixGames));
+    app.prefixGamesLine = timingBuf;
+    
     const bool inOpening = static_cast<int>(app.movesPlayed.size()) < kOpeningPliesSkipKingWalk;
 
     Move mt1 = findFirstLegalFromRanked(app.board, moves, rankedTrie, inOpening);

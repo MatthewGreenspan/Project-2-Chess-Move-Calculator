@@ -47,6 +47,7 @@ struct App {
   std::string openingScanLine;
   std::string moveGradeLine;
   std::string lastAnalyzedFen;
+  std::string prefixGamesLine;
   int bestMoveFrom = -1;
   int bestMoveTo = -1;
   int secondBestMoveFrom = -1;
