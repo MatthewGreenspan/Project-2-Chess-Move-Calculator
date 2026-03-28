@@ -33,7 +33,7 @@ void loadOpeningDatabase() {
   }
   std::cout << "Loading opening database from " << pgnPath << "...\n";
 
-  PGNParser parser(1800, 2500, 40);
+  PGNParser parser(1000, 2500, 40);
   parser.parse(pgnPath, [&](const GameData& game) {
     g_trie.insertGame(game.moves);
     g_openingHash.insertGame(game.moves);
