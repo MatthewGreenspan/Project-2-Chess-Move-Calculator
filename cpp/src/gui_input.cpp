@@ -8,7 +8,7 @@ int getSquareAt(const App& app, int pixelX, int pixelY) {
   if (px < 0 || px >= BOARD_SIZE) return -1;
   int col = px / SQUARE_SIZE;
   int row = py / SQUARE_SIZE;
-  if (app.boardFlipped) row = 7 - row;
+  if (!app.boardFlipped) row = 7 - row;
   return row * 8 + col;
 }
 

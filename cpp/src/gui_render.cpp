@@ -15,7 +15,7 @@ static void drawPiece(SDL_Renderer* r, SDL_Texture* tex, int x, int y, int size)
 
 static void squareToPixel(const App& app, int boardY, int sqIndex, int& outX, int& outY) {
   int row = sqIndex / 8, col = sqIndex % 8;
-  int dispRow = app.boardFlipped ? (7 - row) : row;
+  int dispRow = app.boardFlipped ? row : (7 - row);
   outX = PADDING + col * SQUARE_SIZE + SQUARE_SIZE / 2;
   outY = boardY + dispRow * SQUARE_SIZE + SQUARE_SIZE / 2;
 }
@@ -124,11 +124,11 @@ void render(App& app) {
                 PADDING + PALETTE_HEIGHT + PADDING + BOARD_SIZE + PADDING + 6, pieceSize);
   }
 
-  int boardY = PADDING + PALETTE_HEIGHT + PADDING;
-  for (int row = 0; row < 8; row++) {
-    int logicalRow = app.boardFlipped ? (7 - row) : row;
-    for (int col = 0; col < 8; col++) {
-      int sq = logicalRow * 8 + col;
+ int boardY = PADDING + PALETTE_HEIGHT + PADDING;
+for (int row = 0; row < 8; row++) {
+  int logicalRow = app.boardFlipped ? row : (7 - row);
+  for (int col = 0; col < 8; col++) {
+    int sq = logicalRow * 8 + col;
       Uint32 c = ((logicalRow + col) % 2 == 0) ? COLOR_BOARD_LIGHT : COLOR_BOARD_DARK;
       bool isLegal = false;
       for (const auto& ls : app.legalMoveSquares)

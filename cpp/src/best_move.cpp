@@ -145,6 +145,8 @@ void updateBestMove(App& app, bool force) {
     return;
   }
 
+    bool hasPositionDbMove = false;
+
   {
     std::string bookMove = lookupPositionDBMove(fen);
     if (!bookMove.empty()) {
@@ -154,7 +156,8 @@ void updateBestMove(App& app, bool force) {
           app.bestMoveEnglish = "Book (position DB)";
           setArrow(app, moves[i], true);
           app.moveGradeLine = formatMoveGrade(app.board, moves[i]);
-          return;
+          hasPositionDbMove = true;
+          break;
         }
       }
     }
@@ -277,7 +280,7 @@ void updateBestMove(App& app, bool force) {
       src = Src::Scan;
     }
 
-    if (primary != Move::NO_MOVE) {
+    if (!hasPositionDbMove && primary != Move::NO_MOVE) {
       app.bestMoveSan = uci::moveToSan(app.board, primary);
       if (src == Src::Trie)
         app.bestMoveEnglish = "Book (trie — green arrow)";
@@ -291,7 +294,7 @@ void updateBestMove(App& app, bool force) {
       return;
     }
   }
-
+if (hasPositionDbMove) return;
   std::string uci = getBestMoveFromStockfish(fen, 400);
   Move m = Move::NO_MOVE;
   if (!uci.empty()) m = uci::uciToMove(app.board, uci);
