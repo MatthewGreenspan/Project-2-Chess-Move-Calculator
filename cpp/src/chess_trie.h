@@ -7,6 +7,7 @@
 
 using namespace std;
 struct TrieNode {
+  // move text stored at this node
   string move;
   int count = 0;
   vector<pair<string, TrieNode*>> children;
@@ -15,8 +16,10 @@ struct TrieNode {
 };
 
 class ChessTrie {
+  // root of the opening trie
   TrieNode* root;
 
+  // finds a matching child under one node
   static TrieNode* findChild(TrieNode* node, const string& m) {
     if (!node) return nullptr;
     for (auto& p : node->children)
@@ -24,6 +27,7 @@ class ChessTrie {
     return nullptr;
   }
 
+  // reuses child if found, else creates it
   static TrieNode* getOrCreateChild(TrieNode* node, const string& m) {
     if (TrieNode* c = findChild(node, m)) return c;
     TrieNode* n = new TrieNode(m);
@@ -31,12 +35,14 @@ class ChessTrie {
     return n;
   }
 
+  // frees one node and all kids below it
   void deleteNode(TrieNode* node) {
     if (!node) return;
     for (auto& p : node->children) deleteNode(p.second);
     delete node;
   }
 
+  // drops lines that dont show up enough
   void pruneNode(TrieNode* node, int minCount) {
     if (!node) return;
     vector<string> toDelete;
@@ -61,6 +67,7 @@ class ChessTrie {
 
   ~ChessTrie() { deleteNode(root); }
 
+  // inserts one full move list into the trie
   void insertGame(const vector<string>& moves) {
     TrieNode* curr = root;
     for (const string& move : moves) {
@@ -69,7 +76,7 @@ class ChessTrie {
     }
   }
 
-  /** Current node after following played moves, or nullptr if prefix missing. */
+  //Current node after following played moves, or nullptr if prefix missing. 
   TrieNode* nodeAfterPrefix(const vector<string>& playedMoves) const {
     TrieNode* curr = root;
     for (const string& move : playedMoves) {
@@ -79,6 +86,7 @@ class ChessTrie {
     return curr;
   }
 
+  // picks the child with the highest count
   string getBestMove(const vector<string>& playedMoves) {
     TrieNode* curr = nodeAfterPrefix(playedMoves);
     if (!curr) return "";
@@ -93,6 +101,7 @@ class ChessTrie {
     return bestMove;
   }
 
+  // returns ranked children after a given prefix
   vector<pair<string, int>> getRankedMoves(const vector<string>& playedMoves, int maxMoves) {
     TrieNode* curr = nodeAfterPrefix(playedMoves);
     if (!curr) return {};

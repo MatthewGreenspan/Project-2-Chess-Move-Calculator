@@ -2,6 +2,7 @@
 #include "gui_constants.hpp"
 
 using namespace std;
+// turns pixel coords into the real board index
 int getSquareAt(const App& app, int pixelX, int pixelY) {
   int py = pixelY - PADDING - PALETTE_HEIGHT - PADDING;
   if (py < 0 || py >= BOARD_SIZE) return -1;
@@ -13,12 +14,14 @@ int getSquareAt(const App& app, int pixelX, int pixelY) {
   return row * 8 + col;
 }
 
+// just checks if the mouse is over the board area
 bool inBoard(const App& app, int x, int y) {
   int py = y - PADDING - PALETTE_HEIGHT - PADDING;
   int px = x - PADDING;
   return px >= 0 && px < BOARD_SIZE && py >= 0 && py < BOARD_SIZE;
 }
 
+// figures out which spare piece in the palette got clicked
 int getPalettePieceAt(const App& app, int pixelX, int pixelY) {
   int py = pixelY - PADDING;
   if (py >= 0 && py < PALETTE_HEIGHT) {
@@ -35,6 +38,7 @@ int getPalettePieceAt(const App& app, int pixelX, int pixelY) {
   return -1;
 }
 
+// returns which sidebar button the mouse is on
 int getSidebarButtonAt(int x, int y) {
   int sideX = BOARD_AREA_W + PADDING;
   if (x < sideX || x >= sideX + SIDEBAR_WIDTH - PADDING * 2) return -1;

@@ -6,11 +6,11 @@
 #include <vector>
 
 using namespace std;
-/** Separate-chaining string → V map (no unordered_map). Fixed bucket table, FNV-1a hash. */
 template <typename V>
 class StringHashMap {
  public:
   struct Entry {
+    // one stored key/value pair
     string key;
     V value;
   };
@@ -44,6 +44,7 @@ class StringHashMap {
     return buckets_[h].back().value;
   }
 
+  // erases by swapping with the last one first
   void erase(const string& key) {
     size_t h = hash_(key) % buckets_.size();
     auto& b = buckets_[h];
@@ -72,12 +73,14 @@ class StringHashMap {
   }
 
  private:
+  // basic hash for spreading strings into buckets
   static size_t hash_(const string& s) {
     size_t h = 14695981039346656037ull;
     for (unsigned char c : s) h = (h ^ c) * 1099511628211ull;
     return h;
   }
 
+  // bucket table for all stored entries
   vector<vector<Entry>> buckets_;
   size_t size_ = 0;
 };

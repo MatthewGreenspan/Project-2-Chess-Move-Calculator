@@ -9,18 +9,21 @@ using namespace std;
 using namespace chess;
 using namespace chess_gui;
 
+// draws one piece texture at a board or palette spot
 static void drawPiece(SDL_Renderer* r, SDL_Texture* tex, int x, int y, int size) {
   if (!tex) return;
   SDL_Rect dst = {x, y, size, size};
   SDL_RenderCopy(r, tex, nullptr, &dst);
 }
 
+// trims long sidebar text so it fits nicer
 static string clampText(const string& text, size_t maxLen) {
   if (text.size() <= maxLen) return text;
   if (maxLen <= 3) return text.substr(0, maxLen);
   return text.substr(0, maxLen - 3) + "...";
 }
 
+// background card used in the sidebar panels
 static void drawSidebarCard(SDL_Renderer* r, int x, int y, int w, int h) {
   SDL_Rect rect = {x, y, w, h};
   SDL_SetRenderDrawColor(r, 0x1c, 0x29, 0x4b, 255);
@@ -29,6 +32,7 @@ static void drawSidebarCard(SDL_Renderer* r, int x, int y, int w, int h) {
   SDL_RenderDrawRect(r, &rect);
 }
 
+// converts a board square into screen coords
 static void squareToPixel(const App& app, int boardY, int sqIndex, int& outX, int& outY) {
   int row = sqIndex / 8, col = sqIndex % 8;
   int dispRow = app.boardFlipped ? row : (7 - row);
@@ -36,6 +40,7 @@ static void squareToPixel(const App& app, int boardY, int sqIndex, int& outX, in
   outY = boardY + dispRow * SQUARE_SIZE + SQUARE_SIZE / 2;
 }
 
+// draws the colored move arrows on the board
 static void drawArrowTint(SDL_Renderer* r, int x1, int y1, int x2, int y2, Uint8 br, Uint8 bg, Uint8 bb) {
   float dx = (float)(x2 - x1), dy = (float)(y2 - y1);
   float len = sqrt(dx * dx + dy * dy);
@@ -117,6 +122,7 @@ static void renderText(SDL_Renderer* r, TTF_Font* font, const char* text, int x,
 #endif
 
 void render(App& app) {
+  // clears the full frame first
   SDL_SetRenderDrawColor(app.renderer, 0x1a, 0x1a, 0x2e, 255);
   SDL_RenderClear(app.renderer);
 

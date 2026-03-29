@@ -15,6 +15,7 @@ using namespace std;
 using namespace chess;
 
 struct App {
+  // main app state gets kept here
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
   SDL_Texture* pieceTex[2][6] = {{nullptr}};
@@ -29,9 +30,10 @@ struct App {
   string assetPath;
   int dragFrom = -1;
   int dragFromPalette = -1;
+  // keeps current mouse pos and click start
   int mouseX = 0, mouseY = 0;
   int mouseDownX = 0, mouseDownY = 0;
-  /** From getSidebarButtonAt: -1 none, 1 left turn btn, 2 right turn btn, 3 calculate. */
+  
   int hoverSidebarButton = -1;
   int selectedSquare = -1;
   vector<Square> legalMoveSquares;

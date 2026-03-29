@@ -10,9 +10,11 @@
 using namespace std;
 using namespace chess;
 
+// shared opening structures used across the app
 ChessTrie g_trie;
 OpeningHashMap g_openingHash;
 
+// checks the common spots for the pgn file
 static string findPgnPath() {
   const char* tries[] = {"lichess_games.pgn", "cpp/lichess_games.pgn", "../cpp/lichess_games.pgn"};
   for (const char* p : tries) {
@@ -26,6 +28,7 @@ string getOpeningPgnPath() { return findPgnPath(); }
 
 static constexpr int MAX_PLY = 20;
 
+// loads opening data into trie/hash/position db
 void loadOpeningDatabase() {
   string pgnPath = findPgnPath();
   if (pgnPath.empty()) {
@@ -48,6 +51,7 @@ void loadOpeningDatabase() {
       try {
         move = uci::parseSan(board, san);
       } catch (...) {
+        // stop this game if a san move wont parse
         break;
       }
       if (move == Move::NO_MOVE) break;

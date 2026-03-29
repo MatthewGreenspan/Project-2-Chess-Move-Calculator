@@ -12,6 +12,7 @@
 #include "stockfish.hpp"
 
 using namespace std;
+// reads cp or mate score info out of one uci line
 static void updateScoreFromUciLine(const char* line, int& cp, int& mateIn, bool& haveCp, bool& haveMate) {
   const char* cpPos = strstr(line, "score cp ");
   if (cpPos) {
@@ -33,6 +34,7 @@ static void updateScoreFromUciLine(const char* line, int& cp, int& mateIn, bool&
 #include <unistd.h>
 #endif
 
+// makes the fen safe to put inside a url
 static string urlEncodeFen(const string& fen) {
   string out;
   for (char c : fen) {
@@ -42,6 +44,7 @@ static string urlEncodeFen(const string& fen) {
   return out;
 }
 
+// fallback path if local stockfish isnt around
 static string getBestMoveFromLichess(const string& fen) {
   string encoded = urlEncodeFen(fen);
 #ifdef _WIN32
@@ -73,6 +76,7 @@ static string getBestMoveFromLichess(const string& fen) {
   return moves;
 }
 
+// asks lichess cloud eval for cp or mate score
 bool lichessCloudEvalPosition(const string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
   string encoded = urlEncodeFen(fen);
 #ifdef _WIN32
@@ -118,6 +122,7 @@ static bool fileExists(const char* p) {
   return a != INVALID_FILE_ATTRIBUTES && (a & FILE_ATTRIBUTE_DIRECTORY) == 0;
 }
 
+// tries common windows stockfish locations
 static string findStockfish() {
   char buf[MAX_PATH];
   if (SearchPathA(nullptr, "stockfish.exe", nullptr, sizeof(buf), buf, nullptr) > 0) return string(buf);
@@ -134,6 +139,7 @@ static string findStockfish() {
   return "";
 }
 
+// writes the full command even if windows only sends part first
 static bool writeAll(HANDLE h, const char* data, size_t n) {
   size_t off = 0;
   while (off < n) {
@@ -144,6 +150,7 @@ static bool writeAll(HANDLE h, const char* data, size_t n) {
   return true;
 }
 
+// reads one engine line from the pipe
 static bool readLine(HANDLE h, string& line) {
   line.clear();
   char c;
@@ -156,6 +163,7 @@ static bool readLine(HANDLE h, string& line) {
   return true;
 }
 
+// runs local stockfish and grabs the bestmove line
 static string runStockfishUci(const string& exe, const string& fen) {
   SECURITY_ATTRIBUTES sa{};
   sa.nLength = sizeof(sa);
@@ -257,6 +265,7 @@ static string runStockfishUci(const string& exe, const string& fen) {
   return bestMove;
 }
 
+// windows stockfish eval path used for grading moves
 static bool runStockfishEvalWin(const string& exe, const string& fen, int& cpOut, bool& mateOut, int& mateInOut) {
   SECURITY_ATTRIBUTES sa{};
   sa.nLength = sizeof(sa);
@@ -375,6 +384,7 @@ string getBestMoveFromStockfish(const string& fen, int) {
 
 #else
 
+// tries common unix/mac stockfish locations
 static string findStockfish() {
   const char* paths[] = {"third_party/stockfish/stockfish", "./third_party/stockfish/stockfish", "stockfish",
                            "/opt/homebrew/bin/stockfish", "/usr/local/bin/stockfish"};

@@ -3,6 +3,7 @@
 #include "chess_gui_helpers.hpp"
 
 using namespace std;
+// handles dropping a dragged piece onto a square
 void doDrop(App& app, int toSquare) {
   if (app.dragFrom >= 0 && app.dragFrom < 64) {
     Piece p = app.pieces[app.dragFrom];
@@ -31,6 +32,7 @@ void doDrop(App& app, int toSquare) {
   clearBestMoveDisplay(app);
 }
 
+// removes a board piece when its dragged off
 void doRemove(App& app) {
   if (app.dragFrom >= 0 && app.dragFrom < 64) {
     app.pieces[app.dragFrom] = Piece::NONE;
@@ -44,6 +46,7 @@ void doRemove(App& app) {
   }
 }
 
+// tries to make a real legal move before sandbox stuff
 bool tryLegalMove(App& app, int fromSq, int toSq) {
   Movelist moves;
   chess_gui::getMovesForPiece(app.board, fromSq, moves);

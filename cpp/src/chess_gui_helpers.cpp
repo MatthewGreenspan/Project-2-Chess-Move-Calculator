@@ -4,10 +4,12 @@
 using namespace std;
 namespace chess_gui {
 
+// copies board state into the render array
 void boardToArray(const Board& board, array<Piece, 64>& out) {
   for (int i = 0; i < 64; i++) out[i] = board.at<Piece>(Square(i));
 }
 
+// builds a simple fen from the sandbox piece array
 string boardToFen(const array<Piece, 64>& pieces, Color toMove) {
   string fen;
   for (int r = 7; r >= 0; r--) {
@@ -32,6 +34,7 @@ string boardToFen(const array<Piece, 64>& pieces, Color toMove) {
   return fen;
 }
 
+// turns a move into short human readable text
 string moveToPlainEnglish(const Board& board, const Move& move) {
   if (move == Move::NO_MOVE) return "";
   PieceType pt = board.at<PieceType>(move.from());
@@ -55,12 +58,14 @@ string moveToPlainEnglish(const Board& board, const Move& move) {
   return piece + " to " + toSq;
 }
 
+// sandbox boards still need exactly one king each
 bool hasValidKingCount(const Board& board) {
   auto wk = board.pieces(PieceType::KING, Color::WHITE);
   auto bk = board.pieces(PieceType::KING, Color::BLACK);
   return wk.count() == 1 && bk.count() == 1;
 }
 
+// flips side to move if we need enemy piece legal moves
 Board getBoardForPieceMoves(const Board& board, int squareIndex) {
   Piece p = board.at<Piece>(Square(squareIndex));
   if (p == Piece::NONE) return board;
@@ -74,6 +79,7 @@ Board getBoardForPieceMoves(const Board& board, int squareIndex) {
   return b;
 }
 
+// gets legal moves for one square only
 void getMovesForPiece(const Board& board, int squareIndex, Movelist& out) {
   out.clear();
   if (!hasValidKingCount(board)) return;
@@ -83,6 +89,7 @@ void getMovesForPiece(const Board& board, int squareIndex, Movelist& out) {
   movegen::legalmoves(out, b);
 }
 
+// refreshes the highlighted legal target squares
 void updateLegalMoves(App& app) {
   app.legalMoveSquares.clear();
   if (app.selectedSquare < 0) return;
@@ -94,4 +101,4 @@ void updateLegalMoves(App& app) {
   }
 }
 
-}  // namespace chess_gui
+} 

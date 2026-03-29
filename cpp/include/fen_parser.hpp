@@ -2,6 +2,7 @@
 #include <string>
 
 using namespace std;
+// trims fen down to the part we use as a position key
 inline string fenToKey(const string& fen) {
     size_t first  = fen.find(' ');
     if (first == string::npos) return fen;

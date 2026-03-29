@@ -8,6 +8,7 @@
 
 using namespace std;
 
+// tries a few likely folders till it finds the assets
 string findAssetPath() {
   char* base = SDL_GetBasePath();
   if (base) {
@@ -22,6 +23,7 @@ string findAssetPath() {
   return "assets/";
 }
 
+// loads one png into an sdl texture
 static SDL_Texture* loadTexture(SDL_Renderer* r, const string& path) {
   int w, h, n;
   unsigned char* data = stbi_load(path.c_str(), &w, &h, &n, 4);
@@ -43,6 +45,7 @@ static SDL_Texture* loadTexture(SDL_Renderer* r, const string& path) {
   return t;
 }
 
+// loads piece images and fonts for the ui
 bool loadAssets(App& app) {
   const char* colors[] = {"white", "black"};
   for (int c = 0; c < 2; c++)

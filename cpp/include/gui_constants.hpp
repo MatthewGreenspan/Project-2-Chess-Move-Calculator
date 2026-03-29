@@ -10,6 +10,7 @@
 #endif
 
 using namespace std;
+// ui sizing stuff all kept in one place
 inline constexpr int SQUARE_SIZE = 72;
 inline constexpr int BOARD_SIZE = 8 * SQUARE_SIZE;
 inline constexpr int PALETTE_HEIGHT = 56;
@@ -26,5 +27,6 @@ inline constexpr Uint32 COLOR_BOARD_DARK = 0xb58863ff;
 inline constexpr Uint32 COLOR_HIGHLIGHT = 0x7eb8da80;
 inline constexpr Uint32 COLOR_LEGAL = 0x5a9b5a80;
 
+// file names used when loading piece images
 inline constexpr const char* PIECE_NAMES[] = {"king", "queen", "rook", "bishop", "knight", "pawn"};
 inline constexpr const char* PIECE_NAMES_CAP[] = {"Pawn", "Knight", "Bishop", "Rook", "Queen", "King"};

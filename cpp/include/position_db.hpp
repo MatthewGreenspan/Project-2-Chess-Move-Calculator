@@ -9,12 +9,14 @@
 
 using namespace std;
 struct MoveEntry {
+  // san move text plus how often it showed up
   string san;
   int count = 0;
 };
 
 class PositionDB {
  public:
+  // records one move for a fen key
   void record(const string& fenKey, const string& san) {
     vector<MoveEntry>& entries = table_[fenKey];
     for (auto& e : entries) {
@@ -43,6 +45,7 @@ class PositionDB {
     return table_.find(fenKey);
   }
 
+  // returns the top move if we got one stored
   string bestMove(const string& fenKey) const {
     const auto* entries = lookup(fenKey);
     if (!entries || entries->empty()) return "";
@@ -58,6 +61,7 @@ class PositionDB {
   }
 
  private:
+  // maps fen keys to move counts
   StringHashMap<vector<MoveEntry>> table_;
 };
 

@@ -6,6 +6,7 @@
 #include <string>
 
 using namespace std;
+// adds a vote for a move or bumps it if its already there
 static void bump(vector<pair<string, int>>& votes, const string& san) {
   for (auto& p : votes) {
     if (p.first == san) {
@@ -16,6 +17,7 @@ static void bump(vector<pair<string, int>>& votes, const string& san) {
   votes.push_back({san, 1});
 }
 
+// checks if a game starts with the exact prefix we want
 static bool prefixMatches(const vector<string>& gameMoves, const vector<string>& prefix) {
   if (gameMoves.size() < prefix.size()) return false;
   for (size_t i = 0; i < prefix.size(); ++i) {
@@ -24,6 +26,7 @@ static bool prefixMatches(const vector<string>& gameMoves, const vector<string>&
   return true;
 }
 
+// sorts the vote list from most common to least
 static void sortVotesDesc(vector<pair<string, int>>& v) {
   sort(v.begin(), v.end(),
             [](const pair<string, int>& a, const pair<string, int>& b) {
@@ -31,6 +34,7 @@ static void sortVotesDesc(vector<pair<string, int>>& v) {
             });
 }
 
+// stops early once one move is clearly ahead enough
 static bool confidenceReached(const vector<pair<string, int>>& votes, int totalGames,
                               double confidence, int minGames) {
   if (totalGames < minGames || votes.empty()) return false;
@@ -40,6 +44,7 @@ static bool confidenceReached(const vector<pair<string, int>>& votes, int totalG
 
 PgnScanResult scanPgnForNextMoves(const string& pgnPath, const vector<string>& prefixMoves,
                                   double timeLimitMs, double confidence, int minGamesForConfidence) {
+  // holds the scan result we send back
   PgnScanResult out;
   if (pgnPath.empty()) {
     out.fileMissing = true;
@@ -49,6 +54,7 @@ PgnScanResult scanPgnForNextMoves(const string& pgnPath, const vector<string>& p
   using clock = chrono::steady_clock;
   auto t0 = clock::now();
 
+  // temp vote counts while we stream through the pgn
   vector<pair<string, int>> votes;
   PGNParser parser(1800, 2500, 40);
 

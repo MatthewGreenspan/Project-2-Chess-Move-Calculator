@@ -4,9 +4,10 @@
 #include "chess_trie.h"
 
 using namespace std;
+// loads pgn data into the opening lookup structs
 void loadOpeningDatabase();
-/** Path to lichess_games.pgn if found (same search as loader), else empty. */
 string getOpeningPgnPath();
 string lookupPositionDBMove(const string& fen);
+// shared opening lookup data used by the app
 extern ChessTrie g_trie;
 extern OpeningHashMap g_openingHash;

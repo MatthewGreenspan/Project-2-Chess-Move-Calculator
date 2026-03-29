@@ -23,6 +23,7 @@ constexpr double kScanTimeLimitMs = 5000.0;
 constexpr double kScanConfidence = 0.90;
 constexpr int kScanMinGames = 5;
 
+// formats cp or mate into the sidebar grade text
 static string formatEvalGradeLabel(int cp, bool mate, int mateIn, const char* src) {
   if (mate) {
     if (mateIn > 0)
@@ -35,6 +36,7 @@ static string formatEvalGradeLabel(int cp, bool mate, int mateIn, const char* sr
   return string(buf);
 }
 
+// checks how good one move was after its played
 static string formatMoveGrade(const Board& rootBoard, Move m) {
   Board b = rootBoard;
   b.makeMove(m);
@@ -84,6 +86,7 @@ static Move findFirstLegalFromRanked(const Board& board, const Movelist& moves,
   return Move::NO_MOVE;
 }
 
+// stores the move arrow squares into app state
 static void setArrow(App& app, Move m, bool primary) {
   if (primary) {
     app.bestMoveFrom = m.from().index();
@@ -98,6 +101,7 @@ static void setArrow(App& app, Move m, bool primary) {
 
 }  // namespace
 
+// clears all the move suggestion text/arrows
 void clearBestMoveDisplay(App& app) {
   app.bestMoveFrom = -1;
   app.bestMoveTo = -1;
@@ -114,6 +118,7 @@ void clearBestMoveDisplay(App& app) {
   app.moveGradeLine.clear();
 }
 
+// main best move pipeline for book/db/engine lookup
 void updateBestMove(App& app, bool force) {
   string fen = app.board.getFen();
   if (!force && fen == app.lastAnalyzedFen) return;
@@ -151,6 +156,7 @@ void updateBestMove(App& app, bool force) {
 
   bool hasPositionDbMove = false;
   {
+    // first try the direct fen based opening db
     string bookMove = lookupPositionDBMove(fen);
     if (!bookMove.empty()) {
       for (size_t i = 0; i < moves.size(); i++) {
@@ -169,6 +175,7 @@ void updateBestMove(App& app, bool force) {
   if (static_cast<int>(app.movesPlayed.size()) < kMaxOpeningTriePlies) {
     using clock = chrono::high_resolution_clock;
     auto t0 = clock::now();
+    // gets ranked opening ideas from both structures
     vector<pair<string, int>> rankedTrie = g_trie.getRankedMoves(app.movesPlayed, 16);
     auto t1 = clock::now();
     auto t2 = clock::now();
@@ -185,6 +192,7 @@ void updateBestMove(App& app, bool force) {
     app.hashTimingLine = timingBuf;
 
 
+    // sums how many games matched this prefix
     int triePrefixGames = 0;
     for (const auto& entry : rankedTrie) triePrefixGames += entry.second;
     int hashPrefixGames = 0;
@@ -208,6 +216,7 @@ void updateBestMove(App& app, bool force) {
       mh2 = findFirstLegalFromRanked(app.board, moves, sub, inOpening);
     }
 
+    // builds the sidebar text for top 1 and top 2 moves
     auto buildTwoLines = [&](const char* label, Move m1, Move m2, string& line1, string& line2) {
       char buf[320];
       if (m1 == Move::NO_MOVE) {
@@ -246,6 +255,7 @@ void updateBestMove(App& app, bool force) {
     } else
       buildTwoLines("Hash", mh1, mh2, app.openingHashLine, app.openingHashSecondLine);
 
+    // pgn scan is slower but helps if trie/hash dont have a clean answer
     PgnScanResult scan = scanPgnForNextMoves(getOpeningPgnPath(), app.movesPlayed, kScanTimeLimitMs, kScanConfidence,
                                              kScanMinGames);
     if (scan.fileMissing) {
@@ -271,6 +281,7 @@ void updateBestMove(App& app, bool force) {
     Move primary = Move::NO_MOVE;
     Move secondary = Move::NO_MOVE;
 
+    // picks the first source that gave us a legal book move
     if (mt1 != Move::NO_MOVE) {
       primary = mt1;
       secondary = mt2;
@@ -300,8 +311,10 @@ void updateBestMove(App& app, bool force) {
     }
   }
 
+  // if book lookup already solved it were done
   if (hasPositionDbMove) return;
 
+  // final fallback is engine or lichess cloud
   string uci = getBestMoveFromStockfish(fen, 400);
   Move m = Move::NO_MOVE;
   if (!uci.empty()) m = uci::uciToMove(app.board, uci);
