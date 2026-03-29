@@ -1,6 +1,6 @@
 # Chess Move Calculator (C++)
 
-This folder contains the C++ SDL2 version of Chess Move Calculator. The app is designed for fast position setup and move exploration: you can drag pieces onto the board, inspect legal moves, compare opening suggestions from local PGN data, and ask the engine for a best move.
+This folder contains the C++ SDL2 version of Chess Move Calculator. We designed this program for quick position setup and mexploration of moves. You can drag different pieces onto the board, check legal moves, compare suggestions from PGN data, and ask teh engine to calculate the best move.
 
 ## Features
 

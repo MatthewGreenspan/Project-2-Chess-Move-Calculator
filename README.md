@@ -1,6 +1,6 @@
 # Chess Move Calculator
 
-Chess Move Calculator is a desktop chess app built in C++ with SDL2. You can set up positions by dragging pieces, explore legal moves, compare opening suggestions, and calculate a best move using either local Stockfish or Lichess cloud evaluation.
+This Chess Move Calculator is a desktop chess app built in C++ with SDL2 for front end. You can set up specific positions by moving pieces, play through games, compare move logic, and calculate the best possible moves using data from a databse or Stockfish recommendations.
 
 The project is centered around a native GUI in the `cpp/` folder. If you want full build instructions, platform notes, and engine setup details, start with [`cpp/README.md`](cpp/README.md).
 
@@ -10,7 +10,8 @@ The project is centered around a native GUI in the `cpp/` folder. If you want fu
 - Highlights legal moves for the selected piece
 - Supports free piece placement for setup and testing
 - Suggests opening moves from local PGN data
-- Calculates a best move with Stockfish or a Lichess fallback
+- Calculates the most common next move from PGN data
+- Rates move with Stockfish or (if no move in datase) caluclates optimal Stockfish move
 - Shows move information in the sidebar, including hash/trie recommendation and runtime
 
 ## Quick start
