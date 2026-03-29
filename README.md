@@ -11,7 +11,7 @@ The project is centered around a native GUI in the `cpp/` folder. If you want fu
 - Supports free piece placement for setup and testing
 - Suggests opening moves from local PGN data
 - Calculates a best move with Stockfish or a Lichess fallback
-- Shows move information in the sidebar, including hash and trie reccomendation and runtime
+- Shows move information in the sidebar, including hash/trie recommendation and runtime
 
 ## Quick start
 
