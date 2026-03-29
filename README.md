@@ -1,81 +1,77 @@
 # Chess Move Calculator
 
-Native C++ chess puzzle app — drag pieces to set up positions, palettes for promotions, opening statistics, and engine-backed best move. Opens as a desktop window.
+Chess Move Calculator is a desktop chess app built in C++ with SDL2. You can set up positions by dragging pieces, explore legal moves, compare opening suggestions, and calculate a best move using either local Stockfish or Lichess cloud evaluation.
 
-**Full build and run instructions:** **[cpp/README.md](cpp/README.md)**
+The project is centered around a native GUI in the `cpp/` folder. If you want full build instructions, platform notes, and engine setup details, start with [`cpp/README.md`](cpp/README.md).
 
-## Quick build (macOS / Linux)
+## What it does
 
-```bash
-brew install sdl2 sdl2_ttf pkg-config cmake   # macOS; Debian/Ubuntu: see cpp/README.md
-cd cpp && cmake -B build -S . && cmake --build build && ./build/chess-calc
-```
+- Lets you drag pieces onto the board to build custom positions
+- Highlights legal moves for the selected piece
+- Supports free piece placement for setup and testing
+- Suggests opening moves from local PGN data
+- Calculates a best move with Stockfish or a Lichess fallback
+- Shows move information in the sidebar, including hash and trie reccomendation and runtime
 
-Or with **Make** (Unix, from `cpp/`):
+## Quick start
 
-```bash
-cd cpp && make && ./chess-calc
-```
-
-## Quick build (Windows)
-
-Install **Visual Studio** (C++ workload), **CMake**, and **[vcpkg](https://github.com/microsoft/vcpkg)**. Set **`VCPKG_ROOT`**, then from **`cpp/`**:
-
-```bat
-%VCPKG_ROOT%\vcpkg.exe install --triplet x64-windows
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
-cmake --build build --config Release
-build\Release\chess-calc.exe
-```
-
-Use **`cpp/vcpkg.json`** for SDL2 versions. CMake copies **`assets/`** next to the executable.
-
-## Stockfish (recommended)
-
-For **best move** and **sidebar grades**, install Stockfish (**`brew install stockfish`** on macOS) or run the **shell** fetch script from **`cpp/`** (requires **`bash`**, **`curl`**, **`tar`**):
+### macOS
 
 ```bash
-sh scripts/fetch_stockfish.sh
+brew install sdl2 sdl2_ttf pkg-config cmake
+cd cpp
+cmake -B build -S .
+cmake --build build
+./build/chess-calc
 ```
 
-Without a local binary, **best move** can still use the **Lichess cloud-eval** fallback (needs **`curl`** and network). Grades try Stockfish first, then Lichess when online.
+### Linux (Debian / Ubuntu)
 
-## Run
-
-Run the executable from the **`cpp/`** directory (or keep `assets/` next to the binary — CMake does this automatically).
-
-## Usage
-
-- **Drag pieces** on the board to move them anywhere (free placement) or to legal squares (makes a proper move)
-- **Click a piece** to see its legal moves (highlighted in green)
-- **Click a legal square** to make the move
-- **Drag from palettes** (above/below board) to add pieces — for promotions or setup
-- **Drag pieces onto palettes** to remove them from the board
-- **Reset** — clear and start over
-- **White to move** / **Black to move** — set whose turn and flip the board view
-- **Calculate best move** — opening DB (trie + hash timing) or Stockfish; optional **SF grade** line in the sidebar
-- **Sidebar** — turn, best move, possible moves, FEN (needs **SDL2_ttf**)
-
-## Project structure
-
+```bash
+sudo apt install libsdl2-dev libsdl2-ttf-dev pkg-config cmake build-essential
+cd cpp
+cmake -B build -S .
+cmake --build build
+./build/chess-calc
 ```
+
+### Windows
+
+Use CMake with `vcpkg` from the `cpp/` directory. Full instructions are in [`cpp/README.md`](cpp/README.md).
+
+## Basic use
+
+- Click a piece to show its legal moves
+- Click a highlighted square to make the move
+- Drag pieces freely to set up custom positions
+- Drag from the top or bottom palette to add pieces
+- Use **Calculate best move** to get an opening or engine suggestion
+
+## Best move sources
+
+The app checks moves in this order:
+
+1. Position-based opening data from `lichess_games.pgn`
+2. Opening-prefix suggestions from the trie and hash map
+3. Stockfish
+4. Lichess cloud eval if Stockfish is not available
+
+For the best experience, install Stockfish locally.
+
+## Project layout
+
+```text
 cpp/
-├── src/               # SDL2 app, Stockfish UCI, opening DB, GUI
-├── include/           # chess.hpp, headers
-├── third_party/stockfish/  # optional local Stockfish (see README there)
-├── scripts/           # Shell helpers (e.g. download Stockfish)
-├── vcpkg.json
-├── assets/
-└── CMakeLists.txt
+├── src/        source files
+├── include/    headers and bundled libraries
+├── assets/     piece images
+├── scripts/    helper scripts
+└── README.md   detailed build and setup guide
 ```
 
-## Dependencies
+## Credits
 
-- **SDL2** — window, rendering, input  
-- **SDL2_ttf** — sidebar text  
-- **stb_image** — PNG loading (bundled in `include/stb_image.h`)  
-- **chess.hpp** — move generation, FEN (bundled in `include/chess.hpp`)  
+Piece images in `cpp/assets/white/` and `cpp/assets/black/` come from [Sashite](https://sashite.dev/assets/chess/) and are CC0 / public domain.
+```
 
-## Assets
-
-Chess piece PNGs in `cpp/assets/white/` and `cpp/assets/black/` from [Sashité](https://sashite.dev/assets/chess/), CC0 (public domain).
+---
