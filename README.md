@@ -73,5 +73,3 @@ cpp/
 
 Piece images in `cpp/assets/white/` and `cpp/assets/black/` come from [Sashite](https://sashite.dev/assets/chess/) and are CC0 / public domain.
 ```
-
----
