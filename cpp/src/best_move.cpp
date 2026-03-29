@@ -51,7 +51,6 @@ static string formatMoveGrade(const Board& rootBoard, Move m) {
   return "Grade: add Stockfish (sh scripts/fetch_stockfish.sh or brew) or use network";
 }
 
-/** 0–100 from the mover's perspective (higher = better for the side that just played). */
 static int scorePercentForMove(const Board& rootBoard, Move m) {
   Board b = rootBoard;
   b.makeMove(m);
@@ -73,8 +72,7 @@ static int scorePercentForMove(const Board& rootBoard, Move m) {
   return p;
 }
 
-static Move findFirstLegalFromRanked(const Board& board, const Movelist& moves,
-                                     const vector<pair<string, int>>& ranked, bool inOpening) {
+static Move findFirstLegalFromRanked(const Board& board, const Movelist& moves, const vector<pair<string, int>>& ranked, bool inOpening) {
   for (const auto& entry : ranked) {
     const string& san = entry.first;
     if (san.empty()) continue;
@@ -99,7 +97,7 @@ static void setArrow(App& app, Move m, bool primary) {
   }
 }
 
-}  // namespace
+}  
 
 // clears all the move suggestion text/arrows
 void clearBestMoveDisplay(App& app) {
@@ -156,7 +154,6 @@ void updateBestMove(App& app, bool force) {
 
   bool hasPositionDbMove = false;
   {
-    // first try the direct fen based opening db
     string bookMove = lookupPositionDBMove(fen);
     if (!bookMove.empty()) {
       for (size_t i = 0; i < moves.size(); i++) {
@@ -175,7 +172,6 @@ void updateBestMove(App& app, bool force) {
   if (static_cast<int>(app.movesPlayed.size()) < kMaxOpeningTriePlies) {
     using clock = chrono::high_resolution_clock;
     auto t0 = clock::now();
-    // gets ranked opening ideas from both structures
     vector<pair<string, int>> rankedTrie = g_trie.getRankedMoves(app.movesPlayed, 16);
     auto t1 = clock::now();
     auto t2 = clock::now();
@@ -192,7 +188,6 @@ void updateBestMove(App& app, bool force) {
     app.hashTimingLine = timingBuf;
 
 
-    // sums how many games matched this prefix
     int triePrefixGames = 0;
     for (const auto& entry : rankedTrie) triePrefixGames += entry.second;
     int hashPrefixGames = 0;
@@ -216,7 +211,6 @@ void updateBestMove(App& app, bool force) {
       mh2 = findFirstLegalFromRanked(app.board, moves, sub, inOpening);
     }
 
-    // builds the sidebar text for top 1 and top 2 moves
     auto buildTwoLines = [&](const char* label, Move m1, Move m2, string& line1, string& line2) {
       char buf[320];
       if (m1 == Move::NO_MOVE) {
@@ -244,6 +238,7 @@ void updateBestMove(App& app, bool force) {
     };
 
     if (rankedTrie.empty()) {
+      // if no move from database presents this message
       app.openingTrieLine = "Trie #1: no prefix in DB";
       app.openingTrieSecondLine.clear();
     } else
@@ -255,7 +250,6 @@ void updateBestMove(App& app, bool force) {
     } else
       buildTwoLines("Hash", mh1, mh2, app.openingHashLine, app.openingHashSecondLine);
 
-    // pgn scan is slower but helps if trie/hash dont have a clean answer
     PgnScanResult scan = scanPgnForNextMoves(getOpeningPgnPath(), app.movesPlayed, kScanTimeLimitMs, kScanConfidence,
                                              kScanMinGames);
     if (scan.fileMissing) {
@@ -281,7 +275,6 @@ void updateBestMove(App& app, bool force) {
     Move primary = Move::NO_MOVE;
     Move secondary = Move::NO_MOVE;
 
-    // picks the first source that gave us a legal book move
     if (mt1 != Move::NO_MOVE) {
       primary = mt1;
       secondary = mt2;
@@ -295,7 +288,7 @@ void updateBestMove(App& app, bool force) {
       secondary = mScan2;
       src = Src::Scan;
     }
-
+// Tells you which arrow is which if different recommendations
     if (!hasPositionDbMove && primary != Move::NO_MOVE) {
       app.bestMoveSan = uci::moveToSan(app.board, primary);
       if (src == Src::Trie)
@@ -311,10 +304,8 @@ void updateBestMove(App& app, bool force) {
     }
   }
 
-  // if book lookup already solved it were done
   if (hasPositionDbMove) return;
 
-  // final fallback is engine or lichess cloud
   string uci = getBestMoveFromStockfish(fen, 400);
   Move m = Move::NO_MOVE;
   if (!uci.empty()) m = uci::uciToMove(app.board, uci);
